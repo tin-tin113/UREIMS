@@ -15,20 +15,23 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-    ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
+        'is_active',
+        'campus_id',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
     }
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     /* ---- Role Helpers ---- */
 
@@ -42,7 +45,17 @@ class User extends Authenticatable
         return $this->role === 'extension_staff';
     }
 
+    public function isActive(): bool
+    {
+        return (bool) $this->is_active;
+    }
+
     /* ---- Relationships ---- */
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
 
     public function createdPrograms()
     {

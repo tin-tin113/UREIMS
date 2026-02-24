@@ -39,7 +39,7 @@ class StoreExtensionProgramRequest extends FormRequest
             'general_objective'         => ['nullable', 'string'],
             'specific_objectives'       => ['nullable', 'string'],
             'methodology'               => ['nullable', 'string'],
-            'status'                    => ['required', 'in:proposal,under_review,approved,ongoing,completed'],
+            'status'                    => ['required', 'in:proposal,ongoing,completed'],
             'campus_id'                 => ['required', 'exists:campuses,id'],
 
             // Dynamic members
@@ -56,7 +56,7 @@ class StoreExtensionProgramRequest extends FormRequest
             'projects.*.budget_source'       => ['nullable', 'string', 'max:255'],
             'projects.*.target_start_date'   => ['nullable', 'date'],
             'projects.*.target_end_date'     => ['nullable', 'date'],
-            'projects.*.status'              => ['nullable', 'in:proposal,under_review,approved,ongoing,completed'],
+            'projects.*.status'              => ['nullable', 'in:proposal,ongoing,completed'],
         ];
     }
 }

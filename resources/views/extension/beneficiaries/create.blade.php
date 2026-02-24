@@ -33,6 +33,39 @@
                 <div><label class="block text-sm font-medium text-gray-700 mb-1">Contact No.</label><input type="text" name="contact_no" value="{{ old('contact_no') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"></div>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-100">Impact Classification</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                    <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                        @foreach(\App\Models\ExtensionBeneficiary::TYPES as $t)
+                            <option value="{{ $t }}" {{ old('type', 'individual') === $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sector</label>
+                    <select name="sector" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                        <option value="">— Select Sector —</option>
+                        @foreach(\App\Models\ExtensionBeneficiary::SECTORS as $sKey => $sLabel)
+                            <option value="{{ $sKey }}" {{ old('sector') === $sKey ? 'selected' : '' }}>{{ $sLabel }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Male Count</label>
+                    <input type="number" name="male_count" value="{{ old('male_count', 0) }}" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Female Count</label>
+                    <input type="number" name="female_count" value="{{ old('female_count', 0) }}" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3">Total headcount will be auto-calculated from male + female counts.</p>
+        </div>
+
         <div class="flex items-center gap-3">
             <button type="submit" class="px-6 py-2.5 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold rounded-lg transition shadow-sm">Add Beneficiary</button>
             <a href="{{ route('extension.beneficiaries.index') }}" class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">Cancel</a>

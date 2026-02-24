@@ -72,8 +72,8 @@
 
                 {{-- Programs (expandable) --}}
                 @php
-                    $pStatusColors = ['proposal'=>'bg-yellow-400','under_review'=>'bg-purple-400','approved'=>'bg-blue-400','ongoing'=>'bg-cyan-400','completed'=>'bg-green-400'];
-                    $pStatusLabels = ['proposal'=>'Proposal','under_review'=>'Review','approved'=>'Approved','ongoing'=>'Ongoing','completed'=>'Completed'];
+                    $pStatusColors = ['proposal'=>'bg-yellow-400','ongoing'=>'bg-cyan-400','completed'=>'bg-green-400'];
+                    $pStatusLabels = ['proposal'=>'Proposal','ongoing'=>'Ongoing','completed'=>'Completed'];
                 @endphp
                 <div x-data="{ progOpen: {{ request()->routeIs('extension.programs.*') ? 'true' : 'false' }} }">
                     <div class="flex items-center">
@@ -135,6 +135,17 @@
                     <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9.12 0A4 4 0 0012 8a4 4 0 00-4.12 6.13M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span x-show="sidebarOpen" x-cloak>Beneficiaries</span>
                 </a>
+
+                @if(auth()->user()->isAdmin())
+                <p x-show="sidebarOpen" x-cloak class="px-3 pt-5 pb-1.5 text-[10px] uppercase tracking-[0.12em] text-gray-500 font-semibold">Administration</p>
+                <div x-show="!sidebarOpen" x-cloak class="my-3 mx-3 border-t border-white/10"></div>
+
+                <a href="{{ route('admin.users.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 {{ request()->routeIs('admin.users.*') ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200' }}">
+                    <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span x-show="sidebarOpen" x-cloak>Users</span>
+                </a>
+                @endif
             </nav>
 
             {{-- User --}}

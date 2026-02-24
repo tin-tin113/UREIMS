@@ -14,13 +14,7 @@
         </div>
         <p class="text-2xl font-bold text-gray-800">{{ $totalPrograms }}</p>
         <p class="text-[13px] text-gray-500 mt-0.5">Programs</p>
-        <div class="flex items-center gap-1.5 mt-3 text-[11px] flex-wrap">
-            <span class="px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700">{{ $programsByStatus['proposal'] }} Proposal</span>
-            <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700">{{ $programsByStatus['under_review'] }} Review</span>
-            <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{{ $programsByStatus['approved'] }} Approved</span>
-            <span class="px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700">{{ $programsByStatus['ongoing'] }} Ongoing</span>
-            <span class="px-1.5 py-0.5 rounded bg-green-50 text-green-700">{{ $programsByStatus['completed'] }} Done</span>
-        </div>
+        <p class="text-[11px] text-gray-400 mt-2">{{ $programsByStatus['ongoing'] }} ongoing · {{ $programsByStatus['completed'] }} done</p>
     </a>
 
     <a href="{{ route('extension.projects.index') }}" class="group bg-white rounded-xl border border-gray-200 p-5 hover:border-emerald-300 hover:shadow-md transition">
@@ -32,13 +26,7 @@
         </div>
         <p class="text-2xl font-bold text-gray-800">{{ $totalProjects }}</p>
         <p class="text-[13px] text-gray-500 mt-0.5">Projects</p>
-        <div class="flex items-center gap-1.5 mt-3 text-[11px] flex-wrap">
-            <span class="px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700">{{ $projectsByStatus['proposal'] }} Proposal</span>
-            <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700">{{ $projectsByStatus['under_review'] }} Review</span>
-            <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{{ $projectsByStatus['approved'] }} Approved</span>
-            <span class="px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700">{{ $projectsByStatus['ongoing'] }} Ongoing</span>
-            <span class="px-1.5 py-0.5 rounded bg-green-50 text-green-700">{{ $projectsByStatus['completed'] }} Done</span>
-        </div>
+        <p class="text-[11px] text-gray-400 mt-2">{{ $projectsByStatus['ongoing'] }} ongoing · {{ $projectsByStatus['completed'] }} done</p>
     </a>
 
     <a href="{{ route('extension.activities.index') }}" class="group bg-white rounded-xl border border-gray-200 p-5 hover:border-violet-300 hover:shadow-md transition">
@@ -50,13 +38,7 @@
         </div>
         <p class="text-2xl font-bold text-gray-800">{{ $totalActivities }}</p>
         <p class="text-[13px] text-gray-500 mt-0.5">Activities</p>
-        <div class="flex items-center gap-1.5 mt-3 text-[11px] flex-wrap">
-            <span class="px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700">{{ $activitiesByStatus['proposal'] }} Proposal</span>
-            <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700">{{ $activitiesByStatus['under_review'] }} Review</span>
-            <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{{ $activitiesByStatus['approved'] }} Approved</span>
-            <span class="px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700">{{ $activitiesByStatus['ongoing'] }} Ongoing</span>
-            <span class="px-1.5 py-0.5 rounded bg-green-50 text-green-700">{{ $activitiesByStatus['completed'] }} Done</span>
-        </div>
+        <p class="text-[11px] text-gray-400 mt-2">{{ $activitiesByStatus['ongoing'] }} ongoing · {{ $activitiesByStatus['completed'] }} done</p>
     </a>
 
     <a href="{{ route('extension.beneficiaries.index') }}" class="group bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-300 hover:shadow-md transition">
@@ -68,12 +50,13 @@
         </div>
         <p class="text-2xl font-bold text-gray-800">{{ $totalBeneficiaries }}</p>
         <p class="text-[13px] text-gray-500 mt-0.5">Beneficiaries</p>
+        <p class="text-[11px] text-gray-400 mt-2">♂ {{ number_format($beneficiaryMaleTotal) }} · ♀ {{ number_format($beneficiaryFemaleTotal) }} · {{ number_format($beneficiaryHeadTotal) }} total</p>
     </a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    {{-- ===== LEFT COLUMN — OVERDUE & RECENT ===== --}}
+    {{-- ===== LEFT COLUMN ===== --}}
     <div class="lg:col-span-2 space-y-6">
 
         {{-- Overdue Activities --}}
@@ -87,16 +70,13 @@
                 <span class="px-2 py-0.5 text-[11px] font-semibold bg-red-100 text-red-700 rounded-full">{{ $overdueActivities->count() }}</span>
             </div>
             @foreach($overdueActivities as $act)
-            <div class="flex items-start gap-4 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-red-50/30 transition-colors">
-                <span class="flex-shrink-0 w-9 h-7 flex items-center justify-center text-xs font-bold text-red-400 bg-red-50 rounded mt-0.5">{{ $act->id }}</span>
+            <div class="flex items-center gap-4 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-red-50/30 transition-colors">
                 <div class="flex-1 min-w-0">
                     <p class="text-[13px] font-semibold text-gray-800 truncate">{{ $act->title }}</p>
                     <p class="text-[11px] text-gray-400 mt-0.5">{{ $act->project->title ?? 'No Project' }}</p>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0 pt-0.5">
-                    <span class="text-[11px] text-red-500 font-medium whitespace-nowrap">Due {{ \Carbon\Carbon::parse($act->target_date)->diffForHumans() }}</span>
-                    <a href="{{ route('extension.activities.edit', $act) }}" class="px-3 py-1.5 text-[11px] font-medium text-white bg-red-500 hover:bg-red-600 rounded transition">View</a>
-                </div>
+                <span class="text-[11px] text-red-500 font-medium whitespace-nowrap">{{ \Carbon\Carbon::parse($act->target_date)->diffForHumans() }}</span>
+                <a href="{{ route('extension.activities.edit', $act) }}" class="px-3 py-1.5 text-[11px] font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition flex-shrink-0">View</a>
             </div>
             @endforeach
         </div>
@@ -113,16 +93,13 @@
                 <span class="px-2 py-0.5 text-[11px] font-semibold bg-orange-100 text-orange-700 rounded-full">{{ $overdueProjects->count() }}</span>
             </div>
             @foreach($overdueProjects as $proj)
-            <div class="flex items-start gap-4 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-orange-50/30 transition-colors">
-                <span class="flex-shrink-0 w-9 h-7 flex items-center justify-center text-xs font-bold text-orange-400 bg-orange-50 rounded mt-0.5">{{ $proj->id }}</span>
+            <div class="flex items-center gap-4 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-orange-50/30 transition-colors">
                 <div class="flex-1 min-w-0">
                     <p class="text-[13px] font-semibold text-gray-800 truncate">{{ $proj->title }}</p>
                     <p class="text-[11px] text-gray-400 mt-0.5">{{ $proj->persons_responsible ?? '' }}</p>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0 pt-0.5">
-                    <span class="text-[11px] text-orange-500 font-medium whitespace-nowrap">Due {{ \Carbon\Carbon::parse($proj->target_end_date)->diffForHumans() }}</span>
-                    <a href="{{ route('extension.projects.show', $proj) }}" class="px-3 py-1.5 text-[11px] font-medium text-white bg-orange-500 hover:bg-orange-600 rounded transition">View</a>
-                </div>
+                <span class="text-[11px] text-orange-500 font-medium whitespace-nowrap">{{ \Carbon\Carbon::parse($proj->target_end_date)->diffForHumans() }}</span>
+                <a href="{{ route('extension.projects.show', $proj) }}" class="px-3 py-1.5 text-[11px] font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition flex-shrink-0">View</a>
             </div>
             @endforeach
         </div>
@@ -139,17 +116,12 @@
             </div>
             @forelse($recentPrograms as $prog)
             <div class="flex items-center gap-4 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-                <span class="flex-shrink-0 w-9 h-7 flex items-center justify-center text-xs font-bold text-gray-400 bg-gray-100 rounded">{{ $prog->id }}</span>
                 <div class="flex-1 min-w-0">
                     <p class="text-[13px] font-semibold text-gray-800 truncate">{{ $prog->title }}</p>
                     <p class="text-[11px] text-gray-400 mt-0.5">{{ $prog->campus->name ?? 'N/A' }} · {{ $prog->proponent }}</p>
                 </div>
-                <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-full border
-                    @if($prog->status === 'proposal') border-yellow-200 bg-yellow-50 text-yellow-700
-                    @elseif($prog->status === 'under_review') border-purple-200 bg-purple-50 text-purple-700
-                    @elseif($prog->status === 'approved') border-blue-200 bg-blue-50 text-blue-700
-                    @elseif($prog->status === 'ongoing') border-cyan-200 bg-cyan-50 text-cyan-700
-                    @else border-green-200 bg-green-50 text-green-700 @endif">{{ str_replace('_', ' ', ucfirst($prog->status)) }}</span>
+                @php $psc = ['proposal'=>'border-yellow-200 bg-yellow-50 text-yellow-700','ongoing'=>'border-cyan-200 bg-cyan-50 text-cyan-700','completed'=>'border-green-200 bg-green-50 text-green-700']; @endphp
+                <span class="inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-full border {{ $psc[$prog->status] ?? '' }} flex-shrink-0">{{ str_replace('_', ' ', ucfirst($prog->status)) }}</span>
             </div>
             @empty
             <div class="px-5 py-8 text-center text-[13px] text-gray-400">No programs yet.</div>
@@ -157,66 +129,64 @@
         </div>
     </div>
 
-    {{-- ===== RIGHT COLUMN — STATUS OVERVIEW ===== --}}
+    {{-- ===== RIGHT COLUMN ===== --}}
     <div class="space-y-6">
 
-        {{-- Programs Status --}}
+        {{-- Status Overview (Combined) --}}
         <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="text-[13px] font-bold text-gray-700 mb-4">Programs by Status</h3>
-            @php $pTotal = max($totalPrograms, 1); @endphp
-            <div class="space-y-3">
-                @foreach([
-                    'proposal'     => ['label' => 'Proposal',     'color' => 'yellow', 'bar' => 'bg-yellow-400'],
-                    'under_review' => ['label' => 'Under Review', 'color' => 'purple', 'bar' => 'bg-purple-500'],
-                    'approved'     => ['label' => 'Approved',     'color' => 'blue',   'bar' => 'bg-blue-500'],
-                    'ongoing'      => ['label' => 'Ongoing',      'color' => 'cyan',   'bar' => 'bg-cyan-500'],
-                    'completed'    => ['label' => 'Completed',    'color' => 'green',  'bar' => 'bg-green-500'],
-                ] as $sKey => $sMeta)
-                <div>
-                    <div class="flex items-center justify-between text-[12px] mb-1"><span class="text-{{ $sMeta['color'] }}-700 font-medium">{{ $sMeta['label'] }}</span><span class="text-gray-500">{{ $programsByStatus[$sKey] }}</span></div>
-                    <div class="w-full bg-gray-100 rounded-full h-2"><div class="{{ $sMeta['bar'] }} h-2 rounded-full transition-all" style="width: {{ ($programsByStatus[$sKey]/$pTotal)*100 }}%"></div></div>
-                </div>
-                @endforeach
-            </div>
-        </div>
+            <h3 class="text-[13px] font-bold text-gray-700 mb-4">Status Overview</h3>
 
-        {{-- Projects Status --}}
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="text-[13px] font-bold text-gray-700 mb-4">Projects by Status</h3>
-            @php $prjTotal = max($totalProjects, 1); @endphp
-            <div class="space-y-3">
-                @foreach([
-                    'proposal'     => ['label' => 'Proposal',     'color' => 'yellow', 'bar' => 'bg-yellow-400'],
-                    'under_review' => ['label' => 'Under Review', 'color' => 'purple', 'bar' => 'bg-purple-500'],
-                    'approved'     => ['label' => 'Approved',     'color' => 'blue',   'bar' => 'bg-blue-500'],
-                    'ongoing'      => ['label' => 'Ongoing',      'color' => 'cyan',   'bar' => 'bg-cyan-500'],
-                    'completed'    => ['label' => 'Completed',    'color' => 'green',  'bar' => 'bg-green-500'],
-                ] as $sKey => $sMeta)
-                <div>
-                    <div class="flex items-center justify-between text-[12px] mb-1"><span class="text-{{ $sMeta['color'] }}-700 font-medium">{{ $sMeta['label'] }}</span><span class="text-gray-500">{{ $projectsByStatus[$sKey] }}</span></div>
-                    <div class="w-full bg-gray-100 rounded-full h-2"><div class="{{ $sMeta['bar'] }} h-2 rounded-full transition-all" style="width: {{ ($projectsByStatus[$sKey]/$prjTotal)*100 }}%"></div></div>
-                </div>
-                @endforeach
-            </div>
-        </div>
+            @php
+                $statusMeta = [
+                    'proposal'  => ['label' => 'Proposal',  'bar' => 'bg-yellow-400'],
+                    'ongoing'   => ['label' => 'Ongoing',   'bar' => 'bg-cyan-500'],
+                    'completed' => ['label' => 'Completed', 'bar' => 'bg-green-500'],
+                ];
+                $pTotal = max($totalPrograms, 1);
+                $prjTotal = max($totalProjects, 1);
+                $actTotal = max($totalActivities, 1);
+            @endphp
 
-        {{-- Activities Status --}}
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 class="text-[13px] font-bold text-gray-700 mb-4">Activities by Status</h3>
-            @php $actTotal = max($totalActivities, 1); @endphp
-            <div class="space-y-3">
-                @foreach([
-                    'proposal'     => ['label' => 'Proposal',     'color' => 'yellow', 'bar' => 'bg-yellow-400'],
-                    'under_review' => ['label' => 'Under Review', 'color' => 'purple', 'bar' => 'bg-purple-500'],
-                    'approved'     => ['label' => 'Approved',     'color' => 'blue',   'bar' => 'bg-blue-500'],
-                    'ongoing'      => ['label' => 'Ongoing',      'color' => 'cyan',   'bar' => 'bg-cyan-500'],
-                    'completed'    => ['label' => 'Completed',    'color' => 'green',  'bar' => 'bg-green-500'],
-                ] as $sKey => $sMeta)
-                <div>
-                    <div class="flex items-center justify-between text-[12px] mb-1"><span class="text-{{ $sMeta['color'] }}-700 font-medium">{{ $sMeta['label'] }}</span><span class="text-gray-500">{{ $activitiesByStatus[$sKey] }}</span></div>
-                    <div class="w-full bg-gray-100 rounded-full h-2"><div class="{{ $sMeta['bar'] }} h-2 rounded-full transition-all" style="width: {{ ($activitiesByStatus[$sKey]/$actTotal)*100 }}%"></div></div>
+            {{-- Programs --}}
+            <div class="mb-4">
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Programs</p>
+                <div class="space-y-1.5">
+                    @foreach($statusMeta as $sKey => $sMeta)
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-[11px] text-gray-500">{{ $sMeta['label'] }}</span>
+                        <div class="flex-1 bg-gray-100 rounded-full h-1.5"><div class="{{ $sMeta['bar'] }} h-1.5 rounded-full transition-all" style="width: {{ ($programsByStatus[$sKey]/$pTotal)*100 }}%"></div></div>
+                        <span class="w-6 text-right text-[11px] text-gray-500 font-medium">{{ $programsByStatus[$sKey] }}</span>
+                    </div>
+                    @endforeach
                 </div>
-                @endforeach
+            </div>
+
+            {{-- Projects --}}
+            <div class="mb-4 pt-3 border-t border-gray-100">
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Projects</p>
+                <div class="space-y-1.5">
+                    @foreach($statusMeta as $sKey => $sMeta)
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-[11px] text-gray-500">{{ $sMeta['label'] }}</span>
+                        <div class="flex-1 bg-gray-100 rounded-full h-1.5"><div class="{{ $sMeta['bar'] }} h-1.5 rounded-full transition-all" style="width: {{ ($projectsByStatus[$sKey]/$prjTotal)*100 }}%"></div></div>
+                        <span class="w-6 text-right text-[11px] text-gray-500 font-medium">{{ $projectsByStatus[$sKey] }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Activities --}}
+            <div class="pt-3 border-t border-gray-100">
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Activities</p>
+                <div class="space-y-1.5">
+                    @foreach($statusMeta as $sKey => $sMeta)
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-[11px] text-gray-500">{{ $sMeta['label'] }}</span>
+                        <div class="flex-1 bg-gray-100 rounded-full h-1.5"><div class="{{ $sMeta['bar'] }} h-1.5 rounded-full transition-all" style="width: {{ ($activitiesByStatus[$sKey]/$actTotal)*100 }}%"></div></div>
+                        <span class="w-6 text-right text-[11px] text-gray-500 font-medium">{{ $activitiesByStatus[$sKey] }}</span>
+                    </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -228,23 +198,17 @@
             </div>
             @forelse($recentProjects as $proj)
             <div class="flex items-center gap-3 px-5 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-                <span class="flex-shrink-0 w-7 h-6 flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-100 rounded">{{ $proj->id }}</span>
                 <div class="flex-1 min-w-0">
                     <p class="text-[12px] font-semibold text-gray-800 truncate">{{ $proj->title }}</p>
                     <p class="text-[11px] text-gray-400">{{ $proj->campus->name ?? '' }}</p>
                 </div>
-                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full border
-                    @if($proj->status === 'proposal') border-yellow-200 bg-yellow-50 text-yellow-700
-                    @elseif($proj->status === 'under_review') border-purple-200 bg-purple-50 text-purple-700
-                    @elseif($proj->status === 'approved') border-blue-200 bg-blue-50 text-blue-700
-                    @elseif($proj->status === 'ongoing') border-cyan-200 bg-cyan-50 text-cyan-700
-                    @else border-green-200 bg-green-50 text-green-700 @endif">{{ str_replace('_', ' ', ucfirst($proj->status)) }}</span>
+                @php $prsc = ['proposal'=>'border-yellow-200 bg-yellow-50 text-yellow-700','ongoing'=>'border-cyan-200 bg-cyan-50 text-cyan-700','completed'=>'border-green-200 bg-green-50 text-green-700']; @endphp
+                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full border {{ $prsc[$proj->status] ?? '' }} flex-shrink-0">{{ str_replace('_', ' ', ucfirst($proj->status)) }}</span>
             </div>
             @empty
             <div class="px-5 py-6 text-center text-[13px] text-gray-400">No projects yet.</div>
             @endforelse
         </div>
-
     </div>
 </div>
 @endsection

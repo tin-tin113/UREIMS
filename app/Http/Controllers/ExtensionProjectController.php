@@ -43,11 +43,9 @@ class ExtensionProjectController extends Controller
         // Counts for tabs
         $totalProjects = ExtensionProject::count();
         $statusCounts = [
-            'proposal'     => ExtensionProject::where('status', 'proposal')->count(),
-            'under_review' => ExtensionProject::where('status', 'under_review')->count(),
-            'approved'     => ExtensionProject::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionProject::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionProject::where('status', 'completed')->count(),
+            'proposal'  => ExtensionProject::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionProject::where('status', 'ongoing')->count(),
+            'completed' => ExtensionProject::where('status', 'completed')->count(),
         ];
 
         return view('extension.projects.index', compact('projects', 'campuses', 'programs', 'totalProjects', 'statusCounts'));

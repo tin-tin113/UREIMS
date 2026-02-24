@@ -37,11 +37,9 @@ class ExtensionProgramController extends Controller
         // Counts for tabs
         $totalPrograms = ExtensionProgram::count();
         $statusCounts = [
-            'proposal'     => ExtensionProgram::where('status', 'proposal')->count(),
-            'under_review' => ExtensionProgram::where('status', 'under_review')->count(),
-            'approved'     => ExtensionProgram::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionProgram::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionProgram::where('status', 'completed')->count(),
+            'proposal'  => ExtensionProgram::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionProgram::where('status', 'ongoing')->count(),
+            'completed' => ExtensionProgram::where('status', 'completed')->count(),
         ];
 
         return view('extension.programs.index', compact('programs', 'campuses', 'totalPrograms', 'statusCounts'));

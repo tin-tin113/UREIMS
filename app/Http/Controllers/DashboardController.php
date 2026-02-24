@@ -6,6 +6,8 @@ use App\Models\ExtensionActivity;
 use App\Models\ExtensionBeneficiary;
 use App\Models\ExtensionProgram;
 use App\Models\ExtensionProject;
+use App\Models\Campus;
+use App\Models\User;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -20,31 +22,34 @@ class DashboardController extends Controller
         $totalActivities  = ExtensionActivity::count();
         $totalBeneficiaries = ExtensionBeneficiary::count();
 
+        // Beneficiary impact totals
+        $beneficiaryMaleTotal   = ExtensionBeneficiary::sum('male_count');
+        $beneficiaryFemaleTotal = ExtensionBeneficiary::sum('female_count');
+        $beneficiaryHeadTotal   = ExtensionBeneficiary::sum('total_count');
+
+        // User and campus counts (for admin)
+        $totalUsers    = User::count();
+        $totalCampuses = Campus::count();
+
         // Status breakdown — Programs
         $programsByStatus = [
-            'proposal'     => ExtensionProgram::where('status', 'proposal')->count(),
-            'under_review' => ExtensionProgram::where('status', 'under_review')->count(),
-            'approved'     => ExtensionProgram::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionProgram::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionProgram::where('status', 'completed')->count(),
+            'proposal'  => ExtensionProgram::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionProgram::where('status', 'ongoing')->count(),
+            'completed' => ExtensionProgram::where('status', 'completed')->count(),
         ];
 
         // Status breakdown — Projects
         $projectsByStatus = [
-            'proposal'     => ExtensionProject::where('status', 'proposal')->count(),
-            'under_review' => ExtensionProject::where('status', 'under_review')->count(),
-            'approved'     => ExtensionProject::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionProject::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionProject::where('status', 'completed')->count(),
+            'proposal'  => ExtensionProject::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionProject::where('status', 'ongoing')->count(),
+            'completed' => ExtensionProject::where('status', 'completed')->count(),
         ];
 
         // Status breakdown — Activities
         $activitiesByStatus = [
-            'proposal'     => ExtensionActivity::where('status', 'proposal')->count(),
-            'under_review' => ExtensionActivity::where('status', 'under_review')->count(),
-            'approved'     => ExtensionActivity::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionActivity::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionActivity::where('status', 'completed')->count(),
+            'proposal'  => ExtensionActivity::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionActivity::where('status', 'ongoing')->count(),
+            'completed' => ExtensionActivity::where('status', 'completed')->count(),
         ];
 
         // Overdue items
@@ -79,6 +84,11 @@ class DashboardController extends Controller
             'totalProjects',
             'totalActivities',
             'totalBeneficiaries',
+            'beneficiaryMaleTotal',
+            'beneficiaryFemaleTotal',
+            'beneficiaryHeadTotal',
+            'totalUsers',
+            'totalCampuses',
             'programsByStatus',
             'projectsByStatus',
             'activitiesByStatus',

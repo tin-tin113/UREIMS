@@ -7,6 +7,7 @@ use App\Http\Controllers\ExtensionProgramController;
 use App\Http\Controllers\ExtensionProjectController;
 use App\Http\Controllers\ExtensionActivityController;
 use App\Http\Controllers\ExtensionBeneficiaryController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkflowController;
 
 /*
@@ -56,5 +57,11 @@ Route::middleware('auth')->group(function () {
         Route::post('{type}/{id}/bypass',           [WorkflowController::class, 'bypass'])->name('bypass');
         Route::post('{type}/{id}/upload-document',  [WorkflowController::class, 'uploadDocument'])->name('upload-document');
         Route::delete('document/{document}',        [WorkflowController::class, 'deleteDocument'])->name('delete-document');
+    });
+
+    // Admin: User Management
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::resource('users', UserController::class)->except(['show']);
+        Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
     });
 });

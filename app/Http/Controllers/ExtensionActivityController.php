@@ -38,11 +38,9 @@ class ExtensionActivityController extends Controller
         // Counts for tabs
         $totalActivities = ExtensionActivity::count();
         $statusCounts = [
-            'proposal'     => ExtensionActivity::where('status', 'proposal')->count(),
-            'under_review' => ExtensionActivity::where('status', 'under_review')->count(),
-            'approved'     => ExtensionActivity::where('status', 'approved')->count(),
-            'ongoing'      => ExtensionActivity::where('status', 'ongoing')->count(),
-            'completed'    => ExtensionActivity::where('status', 'completed')->count(),
+            'proposal'  => ExtensionActivity::where('status', 'proposal')->count(),
+            'ongoing'   => ExtensionActivity::where('status', 'ongoing')->count(),
+            'completed' => ExtensionActivity::where('status', 'completed')->count(),
         ];
         $overdueCount = ExtensionActivity::where('status', '!=', 'completed')
             ->whereNotNull('target_date')

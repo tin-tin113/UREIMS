@@ -15,6 +15,12 @@ class ExtensionBeneficiaryController extends Controller
         if (request('project_id')) {
             $query->where('extension_project_id', request('project_id'));
         }
+        if (request('type')) {
+            $query->where('type', request('type'));
+        }
+        if (request('sector')) {
+            $query->where('sector', request('sector'));
+        }
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
@@ -29,8 +35,14 @@ class ExtensionBeneficiaryController extends Controller
             ->orderBy('title')
             ->get();
         $totalBeneficiaries = ExtensionBeneficiary::count();
+        $totalMale   = ExtensionBeneficiary::sum('male_count');
+        $totalFemale = ExtensionBeneficiary::sum('female_count');
+        $totalHead   = ExtensionBeneficiary::sum('total_count');
 
-        return view('extension.beneficiaries.index', compact('beneficiaries', 'projects', 'totalBeneficiaries'));
+        return view('extension.beneficiaries.index', compact(
+            'beneficiaries', 'projects', 'totalBeneficiaries',
+            'totalMale', 'totalFemale', 'totalHead'
+        ));
     }
 
     public function create()
@@ -49,7 +61,15 @@ class ExtensionBeneficiaryController extends Controller
             'address'              => ['nullable', 'string', 'max:500'],
             'contact_no'           => ['nullable', 'string', 'max:20'],
             'organization'         => ['nullable', 'string', 'max:255'],
+            'type'                 => ['required', 'in:individual,organization,community'],
+            'sector'               => ['nullable', 'string', 'max:50'],
+            'male_count'           => ['nullable', 'integer', 'min:0'],
+            'female_count'         => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $data['male_count']   = $data['male_count'] ?? 0;
+        $data['female_count'] = $data['female_count'] ?? 0;
+        $data['total_count']  = $data['male_count'] + $data['female_count'];
 
         ExtensionBeneficiary::create($data);
 
@@ -74,7 +94,15 @@ class ExtensionBeneficiaryController extends Controller
             'address'              => ['nullable', 'string', 'max:500'],
             'contact_no'           => ['nullable', 'string', 'max:20'],
             'organization'         => ['nullable', 'string', 'max:255'],
+            'type'                 => ['required', 'in:individual,organization,community'],
+            'sector'               => ['nullable', 'string', 'max:50'],
+            'male_count'           => ['nullable', 'integer', 'min:0'],
+            'female_count'         => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $data['male_count']   = $data['male_count'] ?? 0;
+        $data['female_count'] = $data['female_count'] ?? 0;
+        $data['total_count']  = $data['male_count'] + $data['female_count'];
 
         $beneficiary->update($data);
 
