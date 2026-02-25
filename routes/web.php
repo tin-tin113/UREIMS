@@ -59,8 +59,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('document/{document}',        [WorkflowController::class, 'deleteDocument'])->name('delete-document');
     });
 
-    // Admin: User Management
-    Route::prefix('admin')->name('admin.')->group(function () {
+    // Admin: User Management (admin only)
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
     });

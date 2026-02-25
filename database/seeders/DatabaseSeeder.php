@@ -42,17 +42,21 @@ class DatabaseSeeder extends Seeder
         |------------------------------------------------------------------
         */
         $admin = User::create([
-            'name'     => 'Admin User',
-            'email'    => 'admin@chmsu.edu.ph',
-            'password' => Hash::make('password'),
-            'role'     => 'admin',
+            'name'      => 'Admin User',
+            'email'     => 'admin@chmsu.edu.ph',
+            'password'  => Hash::make('password'),
+            'role'      => 'admin',
+            'is_active' => true,
+            'campus_id' => null,
         ]);
 
         $staff = User::create([
-            'name'     => 'Extension Staff',
-            'email'    => 'staff@chmsu.edu.ph',
-            'password' => Hash::make('password'),
-            'role'     => 'extension_staff',
+            'name'      => 'Extension Staff',
+            'email'     => 'staff@chmsu.edu.ph',
+            'password'  => Hash::make('password'),
+            'role'      => 'extension_staff',
+            'is_active' => true,
+            'campus_id' => null,
         ]);
 
         /*

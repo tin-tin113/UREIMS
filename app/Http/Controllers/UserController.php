@@ -88,6 +88,11 @@ class UserController extends Controller
 
         $data['is_active'] = $request->boolean('is_active', true);
 
+        // Prevent admin from deactivating themselves via the edit form
+        if ($user->id === auth()->id() && ! $data['is_active']) {
+            return back()->with('error', 'You cannot deactivate your own account.')->withInput();
+        }
+
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {

@@ -47,11 +47,20 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <label class="inline-flex items-center gap-2 mt-1.5 cursor-pointer">
-                        <input type="hidden" name="is_active" value="0">
-                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }} class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-sm text-gray-600">Active account</span>
-                    </label>
+                    @if($user->id === auth()->id())
+                        <div class="inline-flex items-center gap-2 mt-1.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
+                            </span>
+                            <span class="text-xs text-gray-400">You cannot deactivate your own account</span>
+                        </div>
+                    @else
+                        <label class="inline-flex items-center gap-2 mt-1.5 cursor-pointer">
+                            <input type="hidden" name="is_active" value="0">
+                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }} class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-600">Active account</span>
+                        </label>
+                    @endif
                 </div>
             </div>
         </div>

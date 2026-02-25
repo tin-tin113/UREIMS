@@ -8,13 +8,12 @@ use App\Models\ExtensionProgram;
 use App\Models\ExtensionProject;
 use App\Models\Campus;
 use App\Models\User;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $today = Carbon::today();
+        $today = now()->startOfDay();
 
         // Summary counts
         $totalPrograms    = ExtensionProgram::count();
