@@ -22,7 +22,7 @@ class StoreExtensionActivityRequest extends FormRequest
             'indicators_output'    => ['nullable', 'string'],
             'target_date'          => ['nullable', 'date'],
             'completion_date'      => ['nullable', 'date'],
-            'status'               => ['required', 'in:proposal,ongoing,completed'],
+            'status'               => ['required', 'in:draft,proposal,ongoing,completed'],
         ];
     }
 }

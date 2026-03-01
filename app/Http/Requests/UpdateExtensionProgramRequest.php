@@ -14,6 +14,13 @@ class UpdateExtensionProgramRequest extends FormRequest
 
     public function rules(): array
     {
+        // Determine effective status — non-admin users keep the current program status
+        $effectiveStatus = $this->input('status', 'proposal');
+        if (! auth()->user()?->isAdmin()) {
+            $effectiveStatus = $this->route('program')?->status ?? 'proposal';
+        }
+        $isDraft = $effectiveStatus === 'draft';
+
         return [
             'ic_no'                     => ['nullable', 'string', 'max:50', Rule::unique('extension_programs', 'ic_no')->ignore($this->route('program'))],
             'title'                     => ['required', 'string', 'max:255'],
@@ -40,15 +47,16 @@ class UpdateExtensionProgramRequest extends FormRequest
             'general_objective'         => ['nullable', 'string'],
             'specific_objectives'       => ['nullable', 'string'],
             'methodology'               => ['nullable', 'string'],
-            'status'                    => ['required', 'in:proposal,ongoing,completed'],
+            'status'                    => ['required', 'in:draft,proposal,ongoing,completed'],
             'campus_id'                 => ['required', 'exists:campuses,id'],
 
-            'members'                   => ['nullable', 'array'],
+            // Members (beneficiaries/participants) — Req 2.1: at least 1 for non-draft
+            'members'                   => $isDraft ? ['nullable', 'array'] : ['required', 'array', 'min:1'],
             'members.*.name'            => ['required_with:members', 'string', 'max:255'],
             'members.*.responsibility'  => ['nullable', 'string', 'max:255'],
 
-            // Inline projects
-            'projects'                       => ['nullable', 'array'],
+            // Projects — Req 2.3, 2.4: at least 1 for non-draft
+            'projects'                       => $isDraft ? ['nullable', 'array'] : ['required', 'array', 'min:1'],
             'projects.*.id'                  => ['nullable', 'integer', 'exists:extension_projects,id'],
             'projects.*.title'               => ['required', 'string', 'max:255'],
             'projects.*.description'         => ['nullable', 'string'],
@@ -58,6 +66,16 @@ class UpdateExtensionProgramRequest extends FormRequest
             'projects.*.target_start_date'   => ['nullable', 'date'],
             'projects.*.target_end_date'     => ['nullable', 'date'],
             'projects.*.status'              => ['nullable', 'in:proposal,ongoing,completed'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'members.required'  => 'A Program must have at least one beneficiary or participant.',
+            'members.min'       => 'A Program must have at least one beneficiary or participant.',
+            'projects.required' => 'A Program must contain at least one Project.',
+            'projects.min'      => 'A Program must contain at least one Project.',
         ];
     }
 }

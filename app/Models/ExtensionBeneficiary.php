@@ -49,8 +49,10 @@ class ExtensionBeneficiary extends Model
 
     /* ---- Relationships ---- */
 
+    /** The primary owning project */
     public function project()
     {
         return $this->belongsTo(ExtensionProject::class, 'extension_project_id');
     }
+
 }

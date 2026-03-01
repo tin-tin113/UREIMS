@@ -11,7 +11,9 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
         'password',
         'role',
@@ -19,10 +21,11 @@ class User extends Authenticatable
         'campus_id',
     ];
 
+    protected $appends = ['full_name'];
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
         ];
@@ -32,6 +35,29 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    /* ---- Name Accessors ---- */
+
+    /**
+     * Get the user's full name (first + middle + last).
+     * Also accessible via ->name for backward compatibility.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name,
+        ])));
+    }
+
+    /**
+     * Backward-compatible accessor: $user->name returns full name.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->full_name;
+    }
 
     /* ---- Role Helpers ---- */
 

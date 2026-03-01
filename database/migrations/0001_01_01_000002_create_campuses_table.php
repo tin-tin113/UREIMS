@@ -14,10 +14,19 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->timestamps();
         });
+
+        // Add campus FK to users
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('campus_id')->nullable()->after('is_active')
+                  ->constrained('campuses')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('campus_id');
+        });
         Schema::dropIfExists('campuses');
     }
 };

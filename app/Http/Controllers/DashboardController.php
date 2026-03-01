@@ -32,6 +32,7 @@ class DashboardController extends Controller
 
         // Status breakdown — Programs
         $programsByStatus = [
+            'draft'     => ExtensionProgram::where('status', 'draft')->count(),
             'proposal'  => ExtensionProgram::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionProgram::where('status', 'ongoing')->count(),
             'completed' => ExtensionProgram::where('status', 'completed')->count(),
@@ -39,6 +40,7 @@ class DashboardController extends Controller
 
         // Status breakdown — Projects
         $projectsByStatus = [
+            'draft'     => ExtensionProject::where('status', 'draft')->count(),
             'proposal'  => ExtensionProject::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionProject::where('status', 'ongoing')->count(),
             'completed' => ExtensionProject::where('status', 'completed')->count(),
@@ -46,6 +48,7 @@ class DashboardController extends Controller
 
         // Status breakdown — Activities
         $activitiesByStatus = [
+            'draft'     => ExtensionActivity::where('status', 'draft')->count(),
             'proposal'  => ExtensionActivity::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionActivity::where('status', 'ongoing')->count(),
             'completed' => ExtensionActivity::where('status', 'completed')->count(),

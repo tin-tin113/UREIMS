@@ -36,6 +36,7 @@ class ExtensionProgram extends Model
         'specific_objectives',
         'methodology',
         'status',
+        'draft_data',
         'campus_id',
         'created_by',
     ];
@@ -49,6 +50,7 @@ class ExtensionProgram extends Model
             'funding_chmsu_stf'  => 'decimal:2',
             'funding_collaborator' => 'decimal:2',
             'funding_total'      => 'decimal:2',
+            'draft_data'         => 'array',
         ];
     }
 
@@ -74,6 +76,11 @@ class ExtensionProgram extends Model
         return $this->hasMany(ExtensionProject::class);
     }
 
+    public function evaluationForms()
+    {
+        return $this->hasMany(EvaluationForm::class);
+    }
+
     public function statusDocuments()
     {
         return $this->morphMany(StatusDocument::class, 'documentable');
@@ -96,5 +103,37 @@ class ExtensionProgram extends Model
     public function getProjectCountAttribute(): int
     {
         return $this->projects()->count();
+    }
+
+    /** Structural: does the program have at least one project? */
+    public function getHasProjectsAttribute(): bool
+    {
+        return $this->projects()->exists();
+    }
+
+    /** Structural: does the program have at least one member? (Req 2.1) */
+    public function getHasMembersAttribute(): bool
+    {
+        return $this->members()->exists();
+    }
+
+    /** Total beneficiary count across all child projects */
+    public function getTotalBeneficiaryCountAttribute(): int
+    {
+        return \App\Models\ExtensionBeneficiary::whereIn(
+            'extension_project_id',
+            $this->projects()->pluck('extension_projects.id')
+        )->count();
+    }
+
+    /** Are all child projects at or beyond a given phase? */
+    public function allProjectsAtLeast(string $phase): bool
+    {
+        $phaseOrder = ['draft' => 0, 'proposal' => 1, 'ongoing' => 2, 'completed' => 3];
+        $minIdx = $phaseOrder[$phase] ?? 0;
+
+        return $this->projects->every(
+            fn ($p) => ($phaseOrder[$p->status] ?? 0) >= $minIdx
+        );
     }
 }

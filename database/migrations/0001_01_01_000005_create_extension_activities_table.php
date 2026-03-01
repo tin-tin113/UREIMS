@@ -8,21 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Activities: no draft_data, no campus_id (inherits from parent project)
         Schema::create('extension_activities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('extension_project_id')->constrained('extension_projects')->onDelete('cascade');
+            $table->foreignId('extension_project_id')->constrained('extension_projects')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('persons_responsible')->nullable();
-            $table->decimal('budget_requirement', 12, 2)->default(0);
+            $table->decimal('budget_requirement', 12, 2)->nullable();
             $table->text('indicators_output')->nullable();
             $table->date('target_date')->nullable();
             $table->date('completion_date')->nullable();
-
-            // Lifecycle status
-            $table->enum('status', ['proposal', 'ongoing', 'completed'])->default('proposal');
-
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->enum('status', ['draft', 'proposal', 'ongoing', 'completed'])->default('draft');
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

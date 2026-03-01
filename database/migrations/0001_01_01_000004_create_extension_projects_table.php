@@ -10,29 +10,19 @@ return new class extends Migration
     {
         Schema::create('extension_projects', function (Blueprint $table) {
             $table->id();
-
-            // Nullable FK: project can be standalone or under a program
-            $table->foreignId('extension_program_id')
-                  ->nullable()
-                  ->constrained('extension_programs')
-                  ->onDelete('cascade');
-
+            $table->foreignId('extension_program_id')->nullable()->constrained('extension_programs')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('persons_responsible')->nullable();
-            $table->decimal('budget_requirement', 12, 2)->default(0);
+            $table->decimal('budget_requirement', 12, 2)->nullable();
             $table->string('budget_source')->nullable();
             $table->text('indicators_output')->nullable();
             $table->date('target_start_date')->nullable();
             $table->date('target_end_date')->nullable();
-
-            // Lifecycle status
-            $table->enum('status', ['proposal', 'ongoing', 'completed'])->default('proposal');
-
-            // Relationships
-            $table->foreignId('campus_id')->constrained('campuses')->onDelete('cascade');
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-
+            $table->enum('status', ['draft', 'proposal', 'ongoing', 'completed'])->default('draft');
+            $table->json('draft_data')->nullable();
+            $table->foreignId('campus_id')->nullable()->constrained('campuses')->nullOnDelete();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

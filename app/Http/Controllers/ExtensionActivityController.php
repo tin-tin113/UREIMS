@@ -28,7 +28,9 @@ class ExtensionActivityController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('persons_responsible', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('persons_responsible', 'like', "%{$search}%")
+                  ->orWhere('indicators_output', 'like', "%{$search}%");
             });
         }
 
@@ -61,6 +63,13 @@ class ExtensionActivityController extends Controller
     public function store(StoreExtensionActivityRequest $request)
     {
         $data = $request->validated();
+
+        // Verify the user owns the parent project or is admin
+        $project = ExtensionProject::findOrFail($data['extension_project_id']);
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to add activities to this project.');
+        }
+
         $data['created_by'] = auth()->id();
 
         $activity = ExtensionActivity::create($data);
@@ -72,6 +81,10 @@ class ExtensionActivityController extends Controller
 
     public function edit(ExtensionActivity $activity)
     {
+        if (! auth()->user()->isAdmin() && $activity->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to edit this activity.');
+        }
+
         $projects = ExtensionProject::orderBy('title')->get();
 
         return view('extension.activities.edit', compact('activity', 'projects'));
@@ -79,6 +92,10 @@ class ExtensionActivityController extends Controller
 
     public function update(UpdateExtensionActivityRequest $request, ExtensionActivity $activity)
     {
+        if (! auth()->user()->isAdmin() && $activity->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to update this activity.');
+        }
+
         $activity->update($request->validated());
 
         return redirect()
@@ -88,6 +105,18 @@ class ExtensionActivityController extends Controller
 
     public function destroy(ExtensionActivity $activity)
     {
+        if (! auth()->user()->isAdmin() && $activity->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to delete this activity.');
+        }
+
+        // Structural integrity: prevent deleting the last activity of a submitted project
+        $deleteCheck = \App\Services\WorkflowService::canDelete($activity);
+        if (! $deleteCheck['can_delete']) {
+            return redirect()
+                ->route('extension.projects.show', $activity->extension_project_id)
+                ->with('error', implode(' ', $deleteCheck['errors']));
+        }
+
         $projectId = $activity->extension_project_id;
         $activity->delete();
 

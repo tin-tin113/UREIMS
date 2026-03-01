@@ -42,7 +42,8 @@ class DatabaseSeeder extends Seeder
         |------------------------------------------------------------------
         */
         $admin = User::create([
-            'name'      => 'Admin User',
+            'first_name' => 'Admin',
+            'last_name'  => 'User',
             'email'     => 'admin@chmsu.edu.ph',
             'password'  => Hash::make('password'),
             'role'      => 'admin',
@@ -51,7 +52,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $staff = User::create([
-            'name'      => 'Extension Staff',
+            'first_name' => 'Extension',
+            'last_name'  => 'Staff',
             'email'     => 'staff@chmsu.edu.ph',
             'password'  => Hash::make('password'),
             'role'      => 'extension_staff',

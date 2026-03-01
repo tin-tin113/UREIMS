@@ -13,6 +13,13 @@ class StoreExtensionProgramRequest extends FormRequest
 
     public function rules(): array
     {
+        // Determine effective status — non-admin users always become 'proposal'
+        $effectiveStatus = $this->input('status', 'proposal');
+        if (! auth()->user()?->isAdmin()) {
+            $effectiveStatus = 'proposal';
+        }
+        $isDraft = $effectiveStatus === 'draft';
+
         return [
             'ic_no'                     => ['nullable', 'string', 'max:50', 'unique:extension_programs,ic_no'],
             'title'                     => ['required', 'string', 'max:255'],
@@ -39,16 +46,16 @@ class StoreExtensionProgramRequest extends FormRequest
             'general_objective'         => ['nullable', 'string'],
             'specific_objectives'       => ['nullable', 'string'],
             'methodology'               => ['nullable', 'string'],
-            'status'                    => ['required', 'in:proposal,ongoing,completed'],
+            'status'                    => ['required', 'in:draft,proposal,ongoing,completed'],
             'campus_id'                 => ['required', 'exists:campuses,id'],
 
-            // Dynamic members
-            'members'                   => ['nullable', 'array'],
+            // Members (beneficiaries/participants) — Req 2.1: at least 1 for non-draft
+            'members'                   => $isDraft ? ['nullable', 'array'] : ['required', 'array', 'min:1'],
             'members.*.name'            => ['required_with:members', 'string', 'max:255'],
             'members.*.responsibility'  => ['nullable', 'string', 'max:255'],
 
-            // Inline projects
-            'projects'                       => ['nullable', 'array'],
+            // Projects — Req 2.3, 2.4: at least 1 for non-draft
+            'projects'                       => $isDraft ? ['nullable', 'array'] : ['required', 'array', 'min:1'],
             'projects.*.title'               => ['required', 'string', 'max:255'],
             'projects.*.description'         => ['nullable', 'string'],
             'projects.*.persons_responsible' => ['nullable', 'string', 'max:255'],
@@ -57,6 +64,16 @@ class StoreExtensionProgramRequest extends FormRequest
             'projects.*.target_start_date'   => ['nullable', 'date'],
             'projects.*.target_end_date'     => ['nullable', 'date'],
             'projects.*.status'              => ['nullable', 'in:proposal,ongoing,completed'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'members.required'  => 'A Program must have at least one beneficiary or participant.',
+            'members.min'       => 'A Program must have at least one beneficiary or participant.',
+            'projects.required' => 'A Program must contain at least one Project.',
+            'projects.min'      => 'A Program must contain at least one Project.',
         ];
     }
 }

@@ -6,15 +6,27 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Extension Module') — URESIMS</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#f0f2f5] text-gray-800 antialiased font-sans" x-data="{ sidebarOpen: true, mobileMenu: false }">
+<body class="bg-[#f7f8fa] text-gray-800 antialiased font-sans" x-data="{ sidebarOpen: window.innerWidth >= 1024, mobileMenu: false }" @resize.window="if(window.innerWidth >= 1024) { mobileMenu = false }">
 
     <div class="flex min-h-screen">
 
+        {{-- Mobile sidebar backdrop --}}
+        <div x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             @click="mobileMenu = false" class="fixed inset-0 z-20 bg-black/50 lg:hidden" x-cloak></div>
+
         {{-- ======== SIDEBAR ======== --}}
         <aside class="fixed inset-y-0 left-0 z-30 flex flex-col bg-[#0e2439] text-white transition-all duration-300 shadow-xl"
-               :class="sidebarOpen ? 'w-60' : 'w-[68px]'">
+               :class="[
+                   sidebarOpen ? 'lg:w-60' : 'lg:w-[68px]',
+                   mobileMenu ? 'translate-x-0 w-60' : '-translate-x-full lg:translate-x-0'
+               ]">
 
             {{-- Logo --}}
             <div class="flex items-center gap-3 px-4 h-14 border-b border-white/5 flex-shrink-0">
@@ -98,11 +110,31 @@
                     <span x-show="sidebarOpen" x-cloak>Activities</span>
                 </a>
 
-                <a href="{{ route('extension.beneficiaries.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 {{ request()->routeIs('extension.beneficiaries.*') ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200' }}">
-                    <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9.12 0A4 4 0 0012 8a4 4 0 00-4.12 6.13M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span x-show="sidebarOpen" x-cloak>Beneficiaries</span>
-                </a>
+                {{-- Evaluations (expandable) --}}
+                <div x-data="{ evalOpen: {{ request()->routeIs('evaluation.*') ? 'true' : 'false' }} }">
+                    <div class="flex items-center">
+                        <a href="{{ route('evaluation.forms.index') }}"
+                           class="flex-1 flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150 {{ request()->routeIs('evaluation.*') ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200' }}">
+                            <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                            <span x-show="sidebarOpen" x-cloak>Evaluations</span>
+                        </a>
+                        <button x-show="sidebarOpen" x-cloak @click="evalOpen = !evalOpen" class="p-1.5 text-gray-500 hover:text-gray-300 transition rounded">
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="evalOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                    </div>
+                    <div x-show="sidebarOpen && evalOpen" x-collapse x-cloak class="ml-[30px] mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
+                        <a href="{{ route('evaluation.forms.index') }}"
+                           class="flex items-center gap-2 px-2 py-1 rounded text-[12px] transition-all duration-150 {{ request()->routeIs('evaluation.forms.*') ? 'text-white bg-white/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5' }}">
+                            <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+                            <span class="flex-1">Forms</span>
+                        </a>
+                        <a href="{{ route('evaluation.encode.create') }}"
+                           class="flex items-center gap-2 px-2 py-1 rounded text-[12px] transition-all duration-150 {{ request()->routeIs('evaluation.encode.*') ? 'text-white bg-white/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5' }}">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+                            <span class="flex-1">Encode Hardcopy</span>
+                        </a>
+                    </div>
+                </div>
 
                 @if(auth()->user()->isAdmin())
                 <p x-show="sidebarOpen" x-cloak class="px-3 pt-5 pb-1.5 text-[10px] uppercase tracking-[0.12em] text-gray-500 font-semibold">Administration</p>
@@ -119,11 +151,11 @@
             {{-- User --}}
             <div class="border-t border-white/5 px-3 py-3 flex-shrink-0">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
-                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                    <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-semibold text-blue-300 flex-shrink-0">
+                        {{ substr(auth()->user()->first_name ?? 'U', 0, 1) }}{{ substr(auth()->user()->last_name ?? '', 0, 1) }}
                     </div>
                     <div x-show="sidebarOpen" x-cloak class="flex-1 min-w-0">
-                        <p class="text-[12px] font-medium truncate text-gray-200">{{ auth()->user()->name ?? 'User' }}</p>
+                        <p class="text-[12px] font-medium truncate text-gray-200">{{ auth()->user()->full_name ?? 'User' }}</p>
                         <p class="text-[10px] text-gray-500 capitalize">{{ auth()->user()->role ?? 'staff' }}</p>
                     </div>
                     <form method="POST" action="{{ route('logout') }}" x-show="sidebarOpen" x-cloak>
@@ -137,23 +169,33 @@
         </aside>
 
         {{-- ======== MAIN CONTENT ======== --}}
-        <div class="flex-1 transition-all duration-300" :class="sidebarOpen ? 'ml-60' : 'ml-[68px]'">
+        <div class="flex-1 transition-all duration-300 ml-0 lg:ml-60" :class="sidebarOpen ? 'lg:ml-60' : 'lg:!ml-[68px]'">
 
             {{-- Top Bar --}}
-            <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200/80 h-14 px-6 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen = !sidebarOpen" class="text-gray-400 hover:text-gray-600 transition">
+            <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200/60 h-14 sm:h-16 px-4 sm:px-8 flex items-center">
+                {{-- Left: toggle --}}
+                <div class="flex items-center gap-3 w-auto sm:w-48">
+                    {{-- Mobile hamburger --}}
+                    <button @click="mobileMenu = !mobileMenu" class="text-gray-400 hover:text-gray-600 transition lg:hidden">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
-                    <h1 class="text-[15px] font-semibold text-gray-800">@yield('page-title', 'Dashboard')</h1>
+                    {{-- Desktop sidebar toggle --}}
+                    <button @click="sidebarOpen = !sidebarOpen" class="text-gray-400 hover:text-gray-600 transition hidden lg:block">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-[11px] text-gray-400 hidden sm:block">Carlos Hilado Memorial State University</span>
-                    <div class="flex items-center gap-2 pl-4 border-l border-gray-200">
-                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-[10px] font-bold text-white">
-                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                {{-- Center: page title --}}
+                <div class="flex-1 text-center">
+                    <h1 class="text-base sm:text-lg font-semibold text-gray-800 tracking-tight truncate">@yield('page-title', 'Dashboard')</h1>
+                </div>
+                {{-- Right: institution + avatar --}}
+                <div class="flex items-center justify-end gap-4 w-auto sm:w-48">
+                    <span class="text-[11px] text-gray-400 hidden lg:block">CHMSU</span>
+                    <div class="flex items-center gap-2.5 pl-4 border-l border-gray-200/80">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-semibold text-gray-600">
+                            {{ substr(auth()->user()->first_name ?? 'U', 0, 1) }}{{ substr(auth()->user()->last_name ?? '', 0, 1) }}
                         </div>
-                        <span x-show="sidebarOpen" class="text-[12px] text-gray-600 font-medium hidden md:block">{{ auth()->user()->name ?? 'User' }}</span>
+                        <span x-show="sidebarOpen" class="text-[12px] text-gray-600 font-medium hidden md:block">{{ auth()->user()->full_name ?? 'User' }}</span>
                     </div>
                 </div>
             </header>
@@ -162,7 +204,7 @@
             @if(session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
                      x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                     class="mx-6 mt-4 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2">
+                     class="max-w-[1360px] mx-auto mt-5 px-5 py-3.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm flex items-center gap-2.5">
                     <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                     {{ session('success') }}
                 </div>
@@ -171,14 +213,14 @@
             @if(session('error'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
                      x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                     class="mx-6 mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                     class="max-w-[1360px] mx-auto mt-5 px-5 py-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2.5">
                     <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                     {{ session('error') }}
                 </div>
             @endif
 
             {{-- Page Content --}}
-            <main class="p-6">
+            <main class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
                 @yield('content')
             </main>
         </div>

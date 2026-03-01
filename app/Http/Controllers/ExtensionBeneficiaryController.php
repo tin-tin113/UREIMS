@@ -8,116 +8,175 @@ use Illuminate\Http\Request;
 
 class ExtensionBeneficiaryController extends Controller
 {
-    public function index()
+    public function index(ExtensionProject $project)
     {
-        $query = ExtensionBeneficiary::with('project.program');
+        $query = $project->beneficiaries();
 
-        if (request('project_id')) {
-            $query->where('extension_project_id', request('project_id'));
-        }
-        if (request('type')) {
-            $query->where('type', request('type'));
-        }
-        if (request('sector')) {
-            $query->where('sector', request('sector'));
-        }
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('organization', 'like', "%{$search}%");
+                  ->orWhere('organization', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('contact_no', 'like', "%{$search}%")
+                  ->orWhere('sector', 'like', "%{$search}%");
             });
         }
 
+        if (request('type')) {
+            $query->where('type', request('type'));
+        }
+
+        if (request('sector')) {
+            $query->where('sector', request('sector'));
+        }
+
         $beneficiaries = $query->latest()->paginate(15)->withQueryString();
-        $projects = ExtensionProject::with('program')
-            ->withCount('beneficiaries')
-            ->orderBy('title')
-            ->get();
-        $totalBeneficiaries = ExtensionBeneficiary::count();
-        $totalMale   = ExtensionBeneficiary::sum('male_count');
-        $totalFemale = ExtensionBeneficiary::sum('female_count');
-        $totalHead   = ExtensionBeneficiary::sum('total_count');
 
-        return view('extension.beneficiaries.index', compact(
-            'beneficiaries', 'projects', 'totalBeneficiaries',
-            'totalMale', 'totalFemale', 'totalHead'
-        ));
+        return view('extension.beneficiaries.index', compact('beneficiaries', 'project'));
     }
 
-    public function create()
+    public function create(ExtensionProject $project)
     {
-        $projects = ExtensionProject::orderBy('title')->get();
-        $selectedProjectId = request('project_id');
-
-        return view('extension.beneficiaries.create', compact('projects', 'selectedProjectId'));
+        // The add form is now inline on the index page
+        return redirect()->route('extension.beneficiaries.index', $project->id);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ExtensionProject $project)
     {
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to add beneficiaries to this project.');
+        }
+
+        $validated = $request->validate([
+            'beneficiaries'                  => ['required', 'array', 'min:1'],
+            'beneficiaries.*.name'           => ['required', 'string', 'max:255'],
+            'beneficiaries.*.address'        => ['nullable', 'string', 'max:500'],
+            'beneficiaries.*.contact_no'     => ['nullable', 'string', 'max:20'],
+            'beneficiaries.*.organization'   => ['nullable', 'string', 'max:255'],
+            'beneficiaries.*.type'           => ['required', 'in:individual,organization,community'],
+            'beneficiaries.*.sector'         => ['nullable', 'string', 'max:50'],
+            'beneficiaries.*.gender'         => ['nullable', 'in:male,female'],
+            'beneficiaries.*.male_count'     => ['nullable', 'integer', 'min:0'],
+            'beneficiaries.*.female_count'   => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $count = 0;
+        foreach ($validated['beneficiaries'] as $row) {
+            // Derive counts from gender radio if provided, otherwise use explicit counts
+            $gender = $row['gender'] ?? null;
+            if ($gender === 'male') {
+                $male   = 1;
+                $female = 0;
+            } elseif ($gender === 'female') {
+                $male   = 0;
+                $female = 1;
+            } else {
+                $male   = $row['male_count'] ?? 0;
+                $female = $row['female_count'] ?? 0;
+            }
+
+            ExtensionBeneficiary::create([
+                'extension_project_id' => $project->id,
+                'name'                 => $row['name'],
+                'address'              => $row['address'] ?? null,
+                'contact_no'           => $row['contact_no'] ?? null,
+                'organization'         => $row['organization'] ?? null,
+                'type'                 => $row['type'],
+                'sector'               => $row['sector'] ?? null,
+                'male_count'           => $male,
+                'female_count'         => $female,
+                'total_count'          => $male + $female,
+            ]);
+            $count++;
+        }
+
+        $label = $count === 1 ? 'Beneficiary added' : "{$count} beneficiaries added";
+
+        $redirectRoute = $request->input('redirect_to') === 'index'
+            ? route('extension.beneficiaries.index', $project->id)
+            : route('extension.projects.show', $project->id);
+
+        return redirect($redirectRoute)->with('success', "{$label} successfully.");
+    }
+
+    public function edit(ExtensionProject $project, ExtensionBeneficiary $beneficiary)
+    {
+        // The edit modal is now inline on the index page
+        return redirect()->route('extension.beneficiaries.index', $project->id);
+    }
+
+    public function update(Request $request, ExtensionProject $project, ExtensionBeneficiary $beneficiary)
+    {
+        if ($beneficiary->extension_project_id !== $project->id) {
+            abort(404, 'Beneficiary not found in this project.');
+        }
+
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to update this beneficiary.');
+        }
+
         $data = $request->validate([
-            'extension_project_id' => ['required', 'exists:extension_projects,id'],
             'name'                 => ['required', 'string', 'max:255'],
             'address'              => ['nullable', 'string', 'max:500'],
             'contact_no'           => ['nullable', 'string', 'max:20'],
             'organization'         => ['nullable', 'string', 'max:255'],
             'type'                 => ['required', 'in:individual,organization,community'],
             'sector'               => ['nullable', 'string', 'max:50'],
+            'gender'               => ['nullable', 'in:male,female'],
             'male_count'           => ['nullable', 'integer', 'min:0'],
             'female_count'         => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $data['male_count']   = $data['male_count'] ?? 0;
-        $data['female_count'] = $data['female_count'] ?? 0;
-        $data['total_count']  = $data['male_count'] + $data['female_count'];
+        // Derive counts from gender radio if provided, otherwise use explicit counts
+        $gender = $data['gender'] ?? null;
+        unset($data['gender']);
 
-        ExtensionBeneficiary::create($data);
-
-        return redirect()
-            ->route('extension.projects.show', $data['extension_project_id'])
-            ->with('success', 'Beneficiary added successfully.');
-    }
-
-    public function edit(ExtensionBeneficiary $beneficiary)
-    {
-        $beneficiary->load('project.program');
-        $projects = ExtensionProject::with('program')->orderBy('title')->get();
-
-        return view('extension.beneficiaries.edit', compact('beneficiary', 'projects'));
-    }
-
-    public function update(Request $request, ExtensionBeneficiary $beneficiary)
-    {
-        $data = $request->validate([
-            'extension_project_id' => ['required', 'exists:extension_projects,id'],
-            'name'                 => ['required', 'string', 'max:255'],
-            'address'              => ['nullable', 'string', 'max:500'],
-            'contact_no'           => ['nullable', 'string', 'max:20'],
-            'organization'         => ['nullable', 'string', 'max:255'],
-            'type'                 => ['required', 'in:individual,organization,community'],
-            'sector'               => ['nullable', 'string', 'max:50'],
-            'male_count'           => ['nullable', 'integer', 'min:0'],
-            'female_count'         => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $data['male_count']   = $data['male_count'] ?? 0;
-        $data['female_count'] = $data['female_count'] ?? 0;
-        $data['total_count']  = $data['male_count'] + $data['female_count'];
+        if ($gender === 'male') {
+            $data['male_count']   = 1;
+            $data['female_count'] = 0;
+        } elseif ($gender === 'female') {
+            $data['male_count']   = 0;
+            $data['female_count'] = 1;
+        } else {
+            $data['male_count']   = $data['male_count'] ?? 0;
+            $data['female_count'] = $data['female_count'] ?? 0;
+        }
+        $data['total_count'] = $data['male_count'] + $data['female_count'];
 
         $beneficiary->update($data);
 
-        return redirect()
-            ->route('extension.projects.show', $beneficiary->extension_project_id)
-            ->with('success', 'Beneficiary updated successfully.');
+        $redirectRoute = $request->input('redirect_to') === 'index'
+            ? route('extension.beneficiaries.index', $project->id)
+            : route('extension.projects.show', $project->id);
+
+        return redirect($redirectRoute)->with('success', 'Beneficiary updated successfully.');
     }
 
-    public function destroy(ExtensionBeneficiary $beneficiary)
+    public function destroy(Request $request, ExtensionProject $project, ExtensionBeneficiary $beneficiary)
     {
-        $projectId = $beneficiary->extension_project_id;
+        if ($beneficiary->extension_project_id !== $project->id) {
+            abort(404, 'Beneficiary not found in this project.');
+        }
+
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to delete this beneficiary.');
+        }
+
+        // Structural guard: prevent deleting the last beneficiary of a submitted project
+        if (in_array($project->status, ['proposal', 'ongoing', 'completed'])) {
+            $siblingCount = $project->beneficiaries()->where('id', '!=', $beneficiary->id)->count();
+            if ($siblingCount === 0) {
+                return redirect()
+                    ->route('extension.beneficiaries.index', $project->id)
+                    ->with('error', 'Cannot remove the only beneficiary of a submitted project.');
+            }
+        }
+
         $beneficiary->delete();
 
         return redirect()
-            ->route('extension.projects.show', $projectId)
+            ->route('extension.beneficiaries.index', $project->id)
             ->with('success', 'Beneficiary removed successfully.');
     }
 }

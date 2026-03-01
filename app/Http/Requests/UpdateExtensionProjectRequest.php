@@ -23,7 +23,7 @@ class UpdateExtensionProjectRequest extends FormRequest
             'indicators_output'    => ['nullable', 'string'],
             'target_start_date'    => ['nullable', 'date'],
             'target_end_date'      => ['nullable', 'date', 'after_or_equal:target_start_date'],
-            'status'               => ['required', 'in:proposal,ongoing,completed'],
+            'status'               => ['required', 'in:draft,proposal,ongoing,completed'],
             'campus_id'            => ['required', 'exists:campuses,id'],
         ];
     }

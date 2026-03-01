@@ -13,14 +13,14 @@ URESIMS is a web-based management system designed for **Carlos Hilado Memorial S
 
 ## ⚙️ Tech Stack
 
-| Layer         | Technology                                       |
-| ------------- | ------------------------------------------------ |
-| **Backend**   | Laravel 12, PHP 8.2                              |
-| **Database**  | MySQL 8.4                                        |
-| **Frontend**  | Tailwind CSS 4, Alpine.js 3.15 (via Vite)        |
-| **Build Tool**| Vite 7                                           |
-| **Server**    | Laragon (Apache/Nginx + MySQL)                   |
-| **Theme**     | CHMSU institutional green (`#1b5e20`)            |
+| Layer                | Technology                                |
+| -------------------- | ----------------------------------------- |
+| **Backend**    | Laravel 12, PHP 8.2                       |
+| **Database**   | MySQL 8.4                                 |
+| **Frontend**   | Tailwind CSS 4, Alpine.js 3.15 (via Vite) |
+| **Build Tool** | Vite 7                                    |
+| **Server**     | Laragon (Apache/Nginx + MySQL)            |
+| **Theme**      | CHMSU institutional green (`#1b5e20`)   |
 
 ---
 
@@ -96,10 +96,10 @@ npm run build
 
 ## 🔐 Default Login Credentials
 
-| Role                | Email                | Password   |
-| ------------------- | -------------------- | ---------- |
-| **Admin**           | admin@chmsu.edu.ph   | `password` |
-| **Extension Staff** | staff@chmsu.edu.ph   | `password` |
+| Role                      | Email              | Password     |
+| ------------------------- | ------------------ | ------------ |
+| **Admin**           | admin@chmsu.edu.ph | `password` |
+| **Extension Staff** | staff@chmsu.edu.ph | `password` |
 
 ---
 
@@ -129,17 +129,17 @@ npm run build
 
 ### Key Functionalities
 
-| Feature                        | Description                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| **Dashboard**                  | Overview stats (total programs, projects, activities, beneficiaries with gender breakdown), status breakdowns, overdue items, recent items |
-| **Role-Based Access**          | Admin and Extension Staff roles with `RoleMiddleware` and `CheckUserActive` middleware               |
-| **Inline Project Creation**    | Add/edit/remove projects directly within the Program create/edit form using Alpine.js dynamic rows    |
-| **Dynamic Team Members**       | Add/remove program members with name and responsibility fields                                       |
-| **Confirmation Dialogs**       | Alpine.js modal on all create, update, and delete actions (green for save, red for delete)           |
-| **Filtering & Search**         | Filter by status, campus, and free-text search on index pages                                       |
-| **Auto-Calculated Funding**    | Program funding total auto-sums GAA + STF + Collaborator contributions                             |
-| **Sidebar Workflow Counts**    | Sidebar dynamically displays per-phase counts for programs and projects via a view composer           |
-| **Overdue Tracking**           | Dashboard highlights activities and projects past their target date that are not yet completed        |
+| Feature                           | Description                                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Dashboard**               | Overview stats (total programs, projects, activities, beneficiaries with gender breakdown), status breakdowns, overdue items, recent items |
+| **Role-Based Access**       | Admin and Extension Staff roles with `RoleMiddleware` and `CheckUserActive` middleware                                                 |
+| **Inline Project Creation** | Add/edit/remove projects directly within the Program create/edit form using Alpine.js dynamic rows                                         |
+| **Dynamic Team Members**    | Add/remove program members with name and responsibility fields                                                                             |
+| **Confirmation Dialogs**    | Alpine.js modal on all create, update, and delete actions (green for save, red for delete)                                                 |
+| **Filtering & Search**      | Filter by status, campus, and free-text search on index pages                                                                              |
+| **Auto-Calculated Funding** | Program funding total auto-sums GAA + STF + Collaborator contributions                                                                     |
+| **Sidebar Workflow Counts** | Sidebar dynamically displays per-phase counts for programs and projects via a view composer                                                |
+| **Overdue Tracking**        | Dashboard highlights activities and projects past their target date that are not yet completed                                             |
 
 ---
 
@@ -147,18 +147,18 @@ npm run build
 
 ### Tables (16 migrations)
 
-| Table                          | Description                                                    |
-| ------------------------------ | -------------------------------------------------------------- |
-| `users`                        | User accounts with `role` (admin / extension_staff), `is_active` flag, and optional campus FK |
-| `campuses`                     | CHMSU campus locations (Talisay, Binalbagan, Alijis, Fortune Towne) |
-| `extension_programs`           | Full CEFP program records (~25 columns) with all form fields    |
-| `extension_program_members`    | Program team members (FK → programs)                            |
-| `extension_projects`           | Projects, standalone or under a program (nullable FK → programs)|
-| `extension_activities`         | Activities under projects (FK → projects)                       |
-| `extension_beneficiaries`      | Beneficiary records with type, sector, male/female/total counts (FK → projects) |
-| `extension_budget_items`       | Budget line items with location, description, and amount (FK → projects) |
-| `status_documents`             | Polymorphic documents attached to workflow phases (programs or projects) |
-| `status_transition_logs`       | Polymorphic audit log for all status transitions (programs or projects) |
+| Table                         | Description                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `users`                     | User accounts with `role` (admin / extension_staff), `is_active` flag, and optional campus FK |
+| `campuses`                  | CHMSU campus locations (Talisay, Binalbagan, Alijis, Fortune Towne)                               |
+| `extension_programs`        | Full CEFP program records (~25 columns) with all form fields                                      |
+| `extension_program_members` | Program team members (FK → programs)                                                             |
+| `extension_projects`        | Projects, standalone or under a program (nullable FK → programs)                                 |
+| `extension_activities`      | Activities under projects (FK → projects)                                                        |
+| `extension_beneficiaries`   | Beneficiary records with type, sector, male/female/total counts (FK → projects)                  |
+| `extension_budget_items`    | Budget line items with location, description, and amount (FK → projects)                         |
+| `status_documents`          | Polymorphic documents attached to workflow phases (programs or projects)                          |
+| `status_transition_logs`    | Polymorphic audit log for all status transitions (programs or projects)                           |
 
 ### Entity Relationships
 
@@ -172,7 +172,7 @@ Campus (1) ──┬──< ExtensionProgram (1) ──┬──< ExtensionProgr
              │                           ├──< StatusDocument (morph)
              │                           └──< StatusTransitionLog (morph)
              └──< ExtensionProject (standalone)
-             
+           
 User ──> Campus (nullable)
 User ──< uploaded StatusDocuments
 User ──< performed StatusTransitionLogs
@@ -245,22 +245,22 @@ routes/web.php                      # All application routes
 
 ## 🛣️ Routes
 
-| Method    | URI                                          | Action                          |
-| --------- | -------------------------------------------- | ------------------------------- |
-| GET       | `/`                                          | Redirect to login               |
-| GET/POST  | `/login`                                     | Authentication                  |
-| POST      | `/logout`                                    | Logout                          |
-| GET       | `/dashboard`                                 | Dashboard                       |
-| Resource  | `/extension/programs`                        | Programs CRUD                   |
-| Resource  | `/extension/projects`                        | Projects CRUD                   |
-| Resource  | `/extension/activities`                      | Activities CRUD (no show)       |
-| Resource  | `/extension/beneficiaries`                   | Beneficiaries CRUD (no show)    |
-| POST      | `/workflow/{type}/{id}/advance`              | Advance workflow phase           |
-| POST      | `/workflow/{type}/{id}/bypass`               | Admin bypass workflow phase      |
-| POST      | `/workflow/{type}/{id}/upload-document`       | Upload phase document            |
-| DELETE    | `/workflow/document/{document}`               | Delete a document                |
-| Resource  | `/admin/users`                               | User management (admin only, no show) |
-| PATCH     | `/admin/users/{user}/toggle-active`          | Toggle user active status        |
+| Method   | URI                                       | Action                                |
+| -------- | ----------------------------------------- | ------------------------------------- |
+| GET      | `/`                                     | Redirect to login                     |
+| GET/POST | `/login`                                | Authentication                        |
+| POST     | `/logout`                               | Logout                                |
+| GET      | `/dashboard`                            | Dashboard                             |
+| Resource | `/extension/programs`                   | Programs CRUD                         |
+| Resource | `/extension/projects`                   | Projects CRUD                         |
+| Resource | `/extension/activities`                 | Activities CRUD (no show)             |
+| Resource | `/extension/beneficiaries`              | Beneficiaries CRUD (no show)          |
+| POST     | `/workflow/{type}/{id}/advance`         | Advance workflow phase                |
+| POST     | `/workflow/{type}/{id}/bypass`          | Admin bypass workflow phase           |
+| POST     | `/workflow/{type}/{id}/upload-document` | Upload phase document                 |
+| DELETE   | `/workflow/document/{document}`         | Delete a document                     |
+| Resource | `/admin/users`                          | User management (admin only, no show) |
+| PATCH    | `/admin/users/{user}/toggle-active`     | Toggle user active status             |
 
 ---
 

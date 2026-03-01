@@ -27,7 +27,13 @@ class ExtensionProgramController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('proponent_name', 'like', "%{$search}%")
-                  ->orWhere('ic_no', 'like', "%{$search}%");
+                  ->orWhere('ic_no', 'like', "%{$search}%")
+                  ->orWhere('program_leader', 'like', "%{$search}%")
+                  ->orWhere('program_location', 'like', "%{$search}%")
+                  ->orWhere('division_unit', 'like', "%{$search}%")
+                  ->orWhere('cooperating_entities', 'like', "%{$search}%")
+                  ->orWhere('rationale', 'like', "%{$search}%")
+                  ->orWhere('general_objective', 'like', "%{$search}%");
             });
         }
 
@@ -37,6 +43,7 @@ class ExtensionProgramController extends Controller
         // Counts for tabs
         $totalPrograms = ExtensionProgram::count();
         $statusCounts = [
+            'draft'     => ExtensionProgram::where('status', 'draft')->count(),
             'proposal'  => ExtensionProgram::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionProgram::where('status', 'ongoing')->count(),
             'completed' => ExtensionProgram::where('status', 'completed')->count(),
@@ -57,6 +64,11 @@ class ExtensionProgramController extends Controller
         $data = $request->validated();
         $data['created_by'] = auth()->id();
 
+        // Non-admin users can only create proposals
+        if (! auth()->user()->isAdmin()) {
+            $data['status'] = 'proposal';
+        }
+
         // Calculate funding total
         $data['funding_total'] = ($data['funding_chmsu_gaa'] ?? 0)
                                + ($data['funding_chmsu_stf'] ?? 0)
@@ -65,6 +77,17 @@ class ExtensionProgramController extends Controller
         $members = $data['members'] ?? [];
         $projects = $data['projects'] ?? [];
         unset($data['members'], $data['projects']);
+
+        // Structural integrity: non-draft programs require projects and members (Req 2.1, 2.3, 2.4)
+        $effectiveStatus = $data['status'] ?? 'proposal';
+        if ($effectiveStatus !== 'draft') {
+            if (collect($projects)->filter(fn ($p) => ! empty($p['title']))->isEmpty()) {
+                return back()->withErrors(['projects' => 'A Program must contain at least one Project.'])->withInput();
+            }
+            if (collect($members)->filter(fn ($m) => ! empty($m['name']))->isEmpty()) {
+                return back()->withErrors(['members' => 'A Program must have at least one participant or member.'])->withInput();
+            }
+        }
 
         $program = ExtensionProgram::create($data);
 
@@ -109,6 +132,10 @@ class ExtensionProgramController extends Controller
 
     public function edit(ExtensionProgram $program)
     {
+        if (! auth()->user()->isAdmin() && $program->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to edit this program.');
+        }
+
         $program->load(['members', 'projects']);
         $campuses = Campus::orderBy('name')->get();
 
@@ -117,7 +144,16 @@ class ExtensionProgramController extends Controller
 
     public function update(UpdateExtensionProgramRequest $request, ExtensionProgram $program)
     {
+        if (! auth()->user()->isAdmin() && $program->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to update this program.');
+        }
+
         $data = $request->validated();
+
+        // Non-admin users cannot change status directly
+        if (! auth()->user()->isAdmin()) {
+            unset($data['status']);
+        }
 
         $data['funding_total'] = ($data['funding_chmsu_gaa'] ?? 0)
                                + ($data['funding_chmsu_stf'] ?? 0)
@@ -126,6 +162,17 @@ class ExtensionProgramController extends Controller
         $members = $data['members'] ?? [];
         $projects = $data['projects'] ?? [];
         unset($data['members'], $data['projects']);
+
+        // Structural integrity: non-draft programs require projects and members (Req 2.1, 2.3, 2.4)
+        $effectiveStatus = $data['status'] ?? $program->status;
+        if ($effectiveStatus !== 'draft') {
+            if (collect($projects)->filter(fn ($p) => ! empty($p['title']))->isEmpty()) {
+                return back()->withErrors(['projects' => 'A Program must contain at least one Project.'])->withInput();
+            }
+            if (collect($members)->filter(fn ($m) => ! empty($m['name']))->isEmpty()) {
+                return back()->withErrors(['members' => 'A Program must have at least one participant or member.'])->withInput();
+            }
+        }
 
         $program->update($data);
 
@@ -180,6 +227,17 @@ class ExtensionProgramController extends Controller
 
     public function destroy(ExtensionProgram $program)
     {
+        if (! auth()->user()->isAdmin() && $program->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to delete this program.');
+        }
+
+        $deleteCheck = \App\Services\WorkflowService::canDelete($program);
+        if (! $deleteCheck['can_delete']) {
+            return redirect()
+                ->route('extension.programs.show', $program)
+                ->with('error', implode(' ', $deleteCheck['errors']));
+        }
+
         $program->delete();
 
         return redirect()

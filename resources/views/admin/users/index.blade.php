@@ -59,10 +59,10 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-center px-5 py-3.5 border-b border-gray-50 hover:bg-gray-50/50 transition-colors {{ !$user->is_active ? 'opacity-60' : '' }}">
             <div class="col-span-3 min-w-0 flex items-center gap-3">
                 <div class="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold text-white flex-shrink-0 {{ $user->is_active ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 'bg-gray-300' }}">
-                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                    {{ strtoupper(substr($user->first_name, 0, 1)) }}{{ strtoupper(substr($user->last_name, 0, 1)) }}
                 </div>
                 <div class="min-w-0">
-                    <p class="text-[13px] font-semibold text-gray-800 truncate">{{ $user->name }}</p>
+                    <p class="text-[13px] font-semibold text-gray-800 truncate">{{ $user->last_name }}, {{ $user->first_name }}{{ $user->middle_name ? ' ' . substr($user->middle_name, 0, 1) . '.' : '' }}</p>
                     <p class="text-[11px] text-gray-400 md:hidden">{{ $user->email }}</p>
                 </div>
             </div>

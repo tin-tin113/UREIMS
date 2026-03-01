@@ -17,7 +17,9 @@ class UserController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('middle_name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -51,7 +53,9 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
+            'first_name'  => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name'   => ['required', 'string', 'max:255'],
             'email'     => ['required', 'email', 'max:255', 'unique:users,email'],
             'password'  => ['required', 'string', 'min:8', 'confirmed'],
             'role'      => ['required', Rule::in(['admin', 'extension_staff'])],
@@ -78,7 +82,9 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
+            'first_name'  => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name'   => ['required', 'string', 'max:255'],
             'email'     => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password'  => ['nullable', 'string', 'min:8', 'confirmed'],
             'role'      => ['required', Rule::in(['admin', 'extension_staff'])],

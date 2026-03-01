@@ -6,7 +6,7 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Noto Sans', 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', 'Noto Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     /* Custom brand colours */
@@ -24,6 +24,35 @@
     --color-chmsu:       #1b5e20;
     --color-chmsu-light: #4c8c4a;
     --color-chmsu-dark:  #003300;
+
+    /* Wizard accent colours */
+    --color-wizard-50:  #ecfdf5;
+    --color-wizard-100: #d1fae5;
+    --color-wizard-200: #a7f3d0;
+    --color-wizard-300: #6ee7b7;
+    --color-wizard-400: #34d399;
+    --color-wizard-500: #0e6b5e;
+    --color-wizard-600: #0a5a4e;
+    --color-wizard-700: #064e3b;
+    --color-wizard-800: #022c22;
+    --color-wizard-900: #011d17;
+
+    --color-navy:       #0e2439;
+    --color-navy-light: #1a3a56;
+
+    /* Academic / OJS-style accent colours */
+    --color-academic-50:  #e8eef6;
+    --color-academic-100: #c5d4e8;
+    --color-academic-200: #9db5d4;
+    --color-academic-300: #6f92bc;
+    --color-academic-400: #4a74a5;
+    --color-academic-500: #1a4480;
+    --color-academic-600: #14345f;
+    --color-academic-700: #0f2848;
+    --color-academic-800: #0a1c33;
+    --color-academic-900: #061220;
+
+    --color-academic-heading: #1a2b48;
 }
 
 /* Utility styles */

@@ -7,7 +7,7 @@
     <nav class="text-sm text-gray-500 mb-6 flex items-center gap-1">
         <a href="{{ route('admin.users.index') }}" class="hover:text-blue-600">Users</a>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        <span class="text-gray-700 font-medium">Edit — {{ $user->name }}</span>
+        <span class="text-gray-700 font-medium">Edit — {{ $user->full_name }}</span>
     </nav>
 
     @if($errors->any())
@@ -20,10 +20,18 @@
         @csrf @method('PUT')
         <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-base font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-100">Account Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                    <input type="text" name="name" value="{{ old('name', $user->name) }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                    <input type="text" name="first_name" value="{{ old('first_name', $user->first_name) }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input type="text" name="middle_name" value="{{ old('middle_name', $user->middle_name) }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                    <input type="text" name="last_name" value="{{ old('last_name', $user->last_name) }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>

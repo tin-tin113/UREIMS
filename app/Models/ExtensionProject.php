@@ -20,6 +20,7 @@ class ExtensionProject extends Model
         'target_start_date',
         'target_end_date',
         'status',
+        'draft_data',
         'campus_id',
         'created_by',
     ];
@@ -30,6 +31,7 @@ class ExtensionProject extends Model
             'target_start_date'  => 'date',
             'target_end_date'    => 'date',
             'budget_requirement' => 'decimal:2',
+            'draft_data'         => 'array',
         ];
     }
 

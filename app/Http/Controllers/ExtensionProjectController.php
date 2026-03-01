@@ -32,7 +32,10 @@ class ExtensionProjectController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('persons_responsible', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('persons_responsible', 'like', "%{$search}%")
+                  ->orWhere('budget_source', 'like', "%{$search}%")
+                  ->orWhere('indicators_output', 'like', "%{$search}%");
             });
         }
 
@@ -43,6 +46,7 @@ class ExtensionProjectController extends Controller
         // Counts for tabs
         $totalProjects = ExtensionProject::count();
         $statusCounts = [
+            'draft'     => ExtensionProject::where('status', 'draft')->count(),
             'proposal'  => ExtensionProject::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionProject::where('status', 'ongoing')->count(),
             'completed' => ExtensionProject::where('status', 'completed')->count(),
@@ -66,6 +70,11 @@ class ExtensionProjectController extends Controller
     {
         $data = $request->validated();
         $data['created_by'] = auth()->id();
+
+        // Non-admin users can only create proposals
+        if (! auth()->user()->isAdmin()) {
+            $data['status'] = 'proposal';
+        }
 
         $project = ExtensionProject::create($data);
 
@@ -94,6 +103,10 @@ class ExtensionProjectController extends Controller
 
     public function edit(ExtensionProject $project)
     {
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to edit this project.');
+        }
+
         $campuses = Campus::orderBy('name')->get();
         $programs = ExtensionProgram::orderBy('title')->get();
 
@@ -102,7 +115,18 @@ class ExtensionProjectController extends Controller
 
     public function update(UpdateExtensionProjectRequest $request, ExtensionProject $project)
     {
-        $project->update($request->validated());
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to update this project.');
+        }
+
+        $data = $request->validated();
+
+        // Non-admin users cannot change status directly
+        if (! auth()->user()->isAdmin()) {
+            unset($data['status']);
+        }
+
+        $project->update($data);
 
         return redirect()
             ->route('extension.projects.show', $project)
@@ -111,6 +135,17 @@ class ExtensionProjectController extends Controller
 
     public function destroy(ExtensionProject $project)
     {
+        if (! auth()->user()->isAdmin() && $project->created_by !== auth()->id()) {
+            abort(403, 'You do not have permission to delete this project.');
+        }
+
+        $deleteCheck = \App\Services\WorkflowService::canDelete($project);
+        if (! $deleteCheck['can_delete']) {
+            return redirect()
+                ->route('extension.projects.show', $project)
+                ->with('error', implode(' ', $deleteCheck['errors']));
+        }
+
         $project->delete();
 
         return redirect()

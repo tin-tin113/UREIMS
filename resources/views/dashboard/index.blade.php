@@ -41,17 +41,16 @@
         <p class="text-[11px] text-gray-400 mt-2">{{ $activitiesByStatus['ongoing'] }} ongoing · {{ $activitiesByStatus['completed'] }} done</p>
     </a>
 
-    <a href="{{ route('extension.beneficiaries.index') }}" class="group bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-300 hover:shadow-md transition">
+    <div class="group bg-white rounded-xl border border-gray-200 p-5 hover:border-amber-300 hover:shadow-md transition">
         <div class="flex items-center justify-between mb-3">
             <span class="w-10 h-10 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9.12 0A4 4 0 0012 8a4 4 0 00-4.12 6.13M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </span>
-            <svg class="w-4 h-4 text-gray-300 group-hover:text-amber-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </div>
         <p class="text-2xl font-bold text-gray-800">{{ $totalBeneficiaries }}</p>
         <p class="text-[13px] text-gray-500 mt-0.5">Beneficiaries</p>
         <p class="text-[11px] text-gray-400 mt-2">♂ {{ number_format($beneficiaryMaleTotal) }} · ♀ {{ number_format($beneficiaryFemaleTotal) }} · {{ number_format($beneficiaryHeadTotal) }} total</p>
-    </a>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -43,6 +43,24 @@ class ExtensionActivity extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** Evaluation responses submitted for this activity */
+    public function evaluationResponses()
+    {
+        return $this->hasMany(EvaluationResponse::class);
+    }
+
+    /** Polymorphic: documents uploaded against this activity */
+    public function statusDocuments()
+    {
+        return $this->morphMany(StatusDocument::class, 'documentable');
+    }
+
+    /** Polymorphic: workflow transition audit trail */
+    public function transitionLogs()
+    {
+        return $this->morphMany(StatusTransitionLog::class, 'transitionable');
+    }
+
     /* ---- Accessors ---- */
 
     public function getIsOverdueAttribute(): bool
@@ -50,5 +68,11 @@ class ExtensionActivity extends Model
         return $this->status !== 'completed'
             && $this->target_date
             && $this->target_date->isPast();
+    }
+
+    /** Resolve campus: inherit from parent project */
+    public function getCampusIdAttribute(): ?int
+    {
+        return $this->project?->campus_id;
     }
 }
