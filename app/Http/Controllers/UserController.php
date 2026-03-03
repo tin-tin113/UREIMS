@@ -132,6 +132,17 @@ class UserController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        // Prevent deleting users who own programs, projects, or activities.
+        // The DB uses restrictOnDelete on created_by, but we provide a
+        // user-friendly error message here instead of a raw SQL exception.
+        $ownedCount = $user->createdPrograms()->count()
+                    + $user->createdProjects()->count()
+                    + $user->createdActivities()->count();
+
+        if ($ownedCount > 0) {
+            return back()->with('error', 'This user owns ' . $ownedCount . ' record(s) (programs, projects, or activities). Please reassign or delete their records before removing the account, or deactivate the user instead.');
+        }
+
         $user->delete();
 
         return redirect()

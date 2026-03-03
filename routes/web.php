@@ -7,6 +7,7 @@ use App\Http\Controllers\ExtensionProgramController;
 use App\Http\Controllers\ExtensionProjectController;
 use App\Http\Controllers\ExtensionActivityController;
 use App\Http\Controllers\ExtensionBeneficiaryController;
+use App\Http\Controllers\ExtensionBudgetItemController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkflowController;
 use App\Http\Controllers\ProposalWizardController;
@@ -70,6 +71,14 @@ Route::middleware('auth')->group(function () {
         Route::get('{beneficiary}/edit', [ExtensionBeneficiaryController::class, 'edit'])->name('edit');
         Route::patch('{beneficiary}', [ExtensionBeneficiaryController::class, 'update'])->name('update');
         Route::delete('{beneficiary}', [ExtensionBeneficiaryController::class, 'destroy'])->name('destroy');
+    });
+
+    // Extension Budget Items (nested under projects)
+    Route::prefix('extension/projects/{project}/budget-items')->name('extension.budget-items.')->group(function () {
+        Route::get('/', [ExtensionBudgetItemController::class, 'index'])->name('index');
+        Route::post('/', [ExtensionBudgetItemController::class, 'store'])->name('store');
+        Route::patch('{budgetItem}', [ExtensionBudgetItemController::class, 'update'])->name('update');
+        Route::delete('{budgetItem}', [ExtensionBudgetItemController::class, 'destroy'])->name('destroy');
     });
 
     // Workflow status transitions & documents
@@ -137,6 +146,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('forms', EvaluationFormController::class)->names('forms');
         Route::patch('forms/{form}/toggle-active', [EvaluationFormController::class, 'toggleActive'])->name('forms.toggle-active');
         Route::get('forms/{form}/results', [EvaluationFormController::class, 'results'])->name('forms.results');
+        Route::post('forms/{form}/duplicate', [EvaluationFormController::class, 'duplicate'])->name('forms.duplicate');
+
+        // AJAX: form criteria (for template loading) & projects for a given program
+        Route::get('forms/{form}/criteria', [EvaluationFormController::class, 'formCriteria'])->name('forms.criteria');
+        Route::get('projects-by-program/{program}', [EvaluationFormController::class, 'projectsByProgram'])->name('projects-by-program');
 
         // Staff encoding (hardcopy entry)
         Route::get('encode', [EvaluationEncodeController::class, 'create'])->name('encode.create');

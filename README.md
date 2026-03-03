@@ -7,7 +7,7 @@
 
 ## 📖 Overview
 
-URESIMS is a web-based management system designed for **Carlos Hilado Memorial State University (CHMSU)** to streamline the management of extension programs, projects, activities, and beneficiaries. This module focuses on the **Extension Services** arm, providing tools for tracking programs from proposal through completion, with a built-in **3-phase workflow engine**, **document management**, and **admin user management**.
+URESIMS is a web-based management system designed for **Carlos Hilado Memorial State University (CHMSU)** to streamline the management of extension programs, projects, activities, and beneficiaries. This module focuses on the **Extension Services** arm, providing tools for tracking programs from proposal through completion, with a built-in **4-phase workflow engine**, **document management**, and **admin user management**.
 
 ---
 
@@ -114,7 +114,7 @@ npm run build
 
 ### Workflow & Document Management
 
-- **3-Phase Workflow** — Programs and projects follow a formal status lifecycle: `Proposal` → `Ongoing` → `Completed`.
+- **4-Phase Workflow** — Programs, projects, and activities follow a formal status lifecycle: `Draft` → `Proposal` → `Ongoing` → `Completed`.
 - **Requirements Checking** — Each phase enforces required fields and documents before advancement (e.g., proposal requires a "Proposal Document", completion requires a "Terminal/Completion Report").
 - **Phase-Aware Document Uploads** — Upload supporting documents tied to specific workflow phases with format and file-size validation.
 - **Admin Bypass** — Admins can skip workflow phases with a mandatory reason (min 10 characters), logged for audit.
@@ -132,7 +132,7 @@ npm run build
 | Feature                           | Description                                                                                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Dashboard**               | Overview stats (total programs, projects, activities, beneficiaries with gender breakdown), status breakdowns, overdue items, recent items |
-| **Role-Based Access**       | Admin and Extension Staff roles with `RoleMiddleware` and `CheckUserActive` middleware                                                 |
+| **Role-Based Access**       | Admin and Extension Staff roles with `RoleMiddleware` and `EnsureUserIsActive` middleware                                              |
 | **Inline Project Creation** | Add/edit/remove projects directly within the Program create/edit form using Alpine.js dynamic rows                                         |
 | **Dynamic Team Members**    | Add/remove program members with name and responsibility fields                                                                             |
 | **Confirmation Dialogs**    | Alpine.js modal on all create, update, and delete actions (green for save, red for delete)                                                 |
@@ -145,7 +145,7 @@ npm run build
 
 ## 🗄️ Database Schema
 
-### Tables (16 migrations)
+### Tables (9 migrations)
 
 | Table                         | Description                                                                                       |
 | ----------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -157,8 +157,8 @@ npm run build
 | `extension_activities`      | Activities under projects (FK → projects)                                                        |
 | `extension_beneficiaries`   | Beneficiary records with type, sector, male/female/total counts (FK → projects)                  |
 | `extension_budget_items`    | Budget line items with location, description, and amount (FK → projects)                         |
-| `status_documents`          | Polymorphic documents attached to workflow phases (programs or projects)                          |
-| `status_transition_logs`    | Polymorphic audit log for all status transitions (programs or projects)                           |
+| `status_documents`          | Polymorphic documents attached to workflow phases (programs, projects, or activities)             |
+| `status_transition_logs`    | Polymorphic audit log for all status transitions (programs, projects, or activities)              |
 
 ### Entity Relationships
 
@@ -176,6 +176,9 @@ Campus (1) ──┬──< ExtensionProgram (1) ──┬──< ExtensionProgr
 User ──> Campus (nullable)
 User ──< uploaded StatusDocuments
 User ──< performed StatusTransitionLogs
+
+ExtensionProject (1) ──< EvaluationForm (1) ──< EvaluationCriteria
+                                             └──< EvaluationResponse (1) ──< EvaluationAnswer
 ```
 
 ---
@@ -194,9 +197,12 @@ app/
 │   │   ├── ExtensionActivityController.php  # Activities CRUD
 │   │   ├── ExtensionBeneficiaryController.php # Beneficiaries CRUD
 │   │   ├── UserController.php               # Admin user management
-│   │   └── WorkflowController.php           # Workflow advance/bypass/documents
+│   │   ├── WorkflowController.php           # Workflow advance/bypass/documents
+│   │   ├── ProposalWizardController.php     # Multi-step proposal submission wizard
+│   │   ├── EvaluationFormController.php     # Evaluation form CRUD (admin)
+│   │   └── PublicEvaluationController.php   # Public evaluation form responses
 │   ├── Middleware/
-│   │   ├── CheckUserActive.php              # Auto-logout deactivated users
+│   │   ├── EnsureUserIsActive.php           # Auto-logout deactivated users
 │   │   └── RoleMiddleware.php               # Role-based route protection
 │   └── Requests/
 │       ├── StoreExtensionProgramRequest.php
@@ -215,14 +221,18 @@ app/
 │   ├── ExtensionBeneficiary.php    # Beneficiary records
 │   ├── ExtensionBudgetItem.php     # Budget line items
 │   ├── StatusDocument.php          # Polymorphic workflow documents
-│   └── StatusTransitionLog.php     # Polymorphic transition audit log
+│   ├── StatusTransitionLog.php     # Polymorphic transition audit log
+│   ├── EvaluationForm.php          # Evaluation forms for projects
+│   ├── EvaluationCriteria.php      # Criteria within evaluation forms
+│   ├── EvaluationResponse.php      # Public evaluation form responses
+│   └── EvaluationAnswer.php        # Individual criterion answers
 ├── Providers/
 │   └── AppServiceProvider.php      # View composer for sidebar counts
 └── Services/
-    └── WorkflowService.php         # 3-phase workflow engine
+    └── WorkflowService.php         # 4-phase workflow engine
 
 database/
-├── migrations/                     # 16 migration files
+├── migrations/                     # 10 migration files
 └── seeders/
     └── DatabaseSeeder.php          # All seed data in one seeder
 
@@ -261,6 +271,10 @@ routes/web.php                      # All application routes
 | DELETE   | `/workflow/document/{document}`         | Delete a document                     |
 | Resource | `/admin/users`                          | User management (admin only, no show) |
 | PATCH    | `/admin/users/{user}/toggle-active`     | Toggle user active status             |
+| Resource | `/extension/projects/{project}/evaluation-forms` | Evaluation form CRUD (admin) |
+| GET      | `/evaluate/{form:uuid}`                 | Public evaluation form                |
+| POST     | `/evaluate/{form:uuid}`                 | Submit public evaluation response     |
+| GET/POST | `/proposal/{type}/...`                  | Proposal wizard (multi-step)          |
 
 ---
 

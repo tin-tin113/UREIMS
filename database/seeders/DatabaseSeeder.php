@@ -139,7 +139,7 @@ class DatabaseSeeder extends Seeder
             'indicators_output'    => '50 youth participants, post-seminar assessment scores',
             'target_start_date'    => '2025-08-01',
             'target_end_date'      => '2025-11-30',
-            'status'               => 'proposal',
+            'status'               => 'ongoing',
             'campus_id'            => $talisay->id,
             'created_by'           => $staff->id,
         ]);
@@ -203,7 +203,7 @@ class DatabaseSeeder extends Seeder
                 'indicators_output'    => '100 farmers aware of natural pest control',
                 'target_date'          => '2025-09-01',
                 'completion_date'      => null,
-                'status'               => 'proposal',
+                'status'               => 'ongoing',
                 'created_by'           => $staff->id,
             ],
             [

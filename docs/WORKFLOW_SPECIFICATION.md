@@ -22,6 +22,7 @@
 11. [Business Rules Summary](#11-business-rules-summary)
 12. [Database Schema Reference](#12-database-schema-reference)
 13. [API / Route Reference](#13-api--route-reference)
+14. [Evaluation Module](#14-evaluation-module)
 
 ---
 
@@ -277,14 +278,14 @@ Files are uploaded and **immediately** listed in the system. The user can:
 - To update a document, users can delete the existing one and upload a replacement.
 - Document labels and types can be edited after upload via `PATCH /workflow/document/{id}/type`.
 
-### 7.4 Document Deletion Guards
+### 7.3 Document Deletion Guards
 
 - **Ownership check**: Only the uploader or an admin can delete a document.
 - **Phase check**: Documents on `completed` entities can only be deleted by administrators.
 - **Requirement check**: Cannot delete a document that is the sole satisfier of a required-doc constraint.
 - Enforced by `WorkflowService::canModifyDocument()`.
 
-### 7.5 File Format Validation
+### 7.4 File Format Validation
 
 | Phase | Allowed Formats | Max Size |
 |-------|----------------|----------|
@@ -293,7 +294,7 @@ Files are uploaded and **immediately** listed in the system. The user can:
 | Ongoing | PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG | 20 MB |
 | Completed | PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG, MP4, PPTX | 50 MB |
 
-### 7.6 Document Type Taxonomy
+### 7.5 Document Type Taxonomy
 
 Documents are categorized by an editable `document_type` field. Predefined types:
 
@@ -316,7 +317,7 @@ Documents are categorized by an editable `document_type` field. Predefined types
 | `supporting` | Supporting Document |
 | `other` | Other |
 
-### 7.8 Suggested Labels per Phase
+### 7.6 Suggested Labels per Phase
 
 | Phase | Suggested Document Labels |
 |-------|--------------------------|
@@ -325,7 +326,7 @@ Documents are categorized by an editable `document_type` field. Predefined types
 | Ongoing | Monitoring Report, Progress Report, Attendance Sheet, Photo Documentation, Financial Report |
 | Completed | Terminal/Completion Report, Evaluation Report, Certificate, Photo Documentation, Financial Liquidation, Post-Activity Report |
 
-### 7.9 Soft Deletion
+### 7.7 Soft Deletion
 
 Deleted documents are soft-deleted (`deleted_at` timestamp) to preserve the audit trail. The actual file remains on disk for compliance/audit purposes.
 
@@ -362,7 +363,8 @@ Budget items are line-item entries associated with a **Project** (`extension_pro
 
 | Field | Description |
 |-------|-------------|
-| `item` | Description of the budget line item |
+| `item_description` | Description of the budget line item |
+| `location` | Location associated with the budget item |
 | `total_budget` | Amount allocated |
 
 - Budget items can be added, edited, or removed at any phase.
@@ -611,6 +613,36 @@ All routes require authentication (`auth` middleware).
 | Projects | `extension/projects` | `ExtensionProjectController` |
 | Activities | `extension/activities` | `ExtensionActivityController` |
 | Beneficiaries | `extension/beneficiaries` | `ExtensionBeneficiaryController` |
+
+---
+
+## 14. Evaluation Module
+
+The system includes a public evaluation feature for gathering stakeholder feedback on extension projects.
+
+### 14.1 Core Entities
+
+| Entity | Description |
+|--------|-------------|
+| **EvaluationForm** | A form linked to a specific project, identified by a UUID for public access |
+| **EvaluationCriteria** | Individual rating criteria within a form (e.g., "Relevance", "Timeliness") |
+| **EvaluationResponse** | A single respondent’s submission (name, email, relationship) |
+| **EvaluationAnswer** | The respondent’s numeric rating for each criterion |
+
+### 14.2 Workflow
+
+1. An admin creates an `EvaluationForm` for a project, adds criteria, and toggles `is_active`.
+2. The form is publicly accessible via `/evaluate/{form:uuid}` — no login required.
+3. Respondents fill in their name, email, relationship, and rate each criterion (1–5 scale).
+4. Responses and answers are stored and viewable by admins.
+
+### 14.3 Routes
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| Resource | `/extension/projects/{project}/evaluation-forms` | CRUD for evaluation forms (admin) |
+| GET | `/evaluate/{form:uuid}` | Public evaluation form page |
+| POST | `/evaluate/{form:uuid}` | Submit public evaluation response |
 
 ---
 

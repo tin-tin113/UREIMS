@@ -55,19 +55,71 @@
             </div>
         </div>
 
-        {{-- Program Selection Card --}}
+        {{-- Program & Project Selection Card --}}
         <div class="gf-card">
-            <p class="gf-label">Extension Program<span class="gf-required">*</span></p>
-            <select name="extension_program_id" required class="gf-select">
-                <option value="">Select a program…</option>
-                @foreach($programs as $program)
-                    <option value="{{ $program->id }}" {{ old('extension_program_id', $selectedProgram) == $program->id ? 'selected' : '' }}>
-                        {{ $program->title }}
-                    </option>
-                @endforeach
-            </select>
-            @error('extension_program_id')<p style="font-size: 12px; color: #d93025; margin-top: 4px;">{{ $message }}</p>@enderror
+            <div style="margin-bottom: 20px;">
+                <p class="gf-label">Extension Program<span class="gf-required">*</span></p>
+                <select name="extension_program_id" required class="gf-select"
+                        x-model="selectedProgram" @change="loadProjects()">
+                    <option value="">Select a program…</option>
+                    @foreach($programs as $program)
+                        <option value="{{ $program->id }}" {{ old('extension_program_id', $selectedProgram) == $program->id ? 'selected' : '' }}>
+                            {{ $program->title }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('extension_program_id')<p style="font-size: 12px; color: #d93025; margin-top: 4px;">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
+                <p class="gf-label">Extension Project <span style="font-size: 12px; color: #70757a;">(optional)</span></p>
+                <select name="extension_project_id" class="gf-select"
+                        x-model="selectedProject" :disabled="!selectedProgram || loadingProjects">
+                    <option value="">All projects / Not specific to a project</option>
+                    <template x-for="project in projects" :key="project.id">
+                        <option :value="project.id" x-text="project.title"
+                                :selected="project.id == selectedProject"></option>
+                    </template>
+                </select>
+                <p x-show="loadingProjects" style="font-size: 12px; color: #70757a; margin-top: 4px;">Loading projects…</p>
+                <p x-show="!loadingProjects && selectedProgram && projects.length === 0" style="font-size: 12px; color: #70757a; margin-top: 4px;">No projects found for this program.</p>
+                @error('extension_project_id')<p style="font-size: 12px; color: #d93025; margin-top: 4px;">{{ $message }}</p>@enderror
+            </div>
         </div>
+
+        {{-- Use Existing Form as Template --}}
+        @if($templateForms->count())
+        <div class="gf-card" style="border-left: 4px solid #fbbc04;">
+            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbc04" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                <div>
+                    <p style="font-size: 14px; color: #202124; font-weight: 500; margin: 0;">Reuse an existing form</p>
+                    <p style="font-size: 12px; color: #70757a; margin: 4px 0 0;">Load criteria from a previous evaluation form as a starting point.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <select x-model="selectedTemplate" class="gf-select" style="flex: 1; min-width: 200px;">
+                    <option value="">Start from scratch</option>
+                    @foreach($templateForms as $tpl)
+                        <option value="{{ $tpl->id }}">{{ $tpl->title }} ({{ $tpl->criteria_count }} criteria)</option>
+                    @endforeach
+                </select>
+                <button type="button" @click="loadTemplate()" :disabled="!selectedTemplate || loadingTemplate"
+                        class="gf-btn-secondary"
+                        style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 10px 16px; border: 1px solid #dadce0; border-radius: 4px;"
+                        :style="selectedTemplate ? '' : 'opacity: 0.5; cursor: default;'">
+                    <svg x-show="!loadingTemplate" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <svg x-show="loadingTemplate" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                    <span x-text="loadingTemplate ? 'Loading…' : 'Load Criteria'"></span>
+                </button>
+            </div>
+            <p x-show="templateLoaded" x-cloak x-transition
+               style="font-size: 12px; color: #2e7d32; margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Criteria loaded from template. You can edit them below before creating.
+            </p>
+        </div>
+        @endif
 
         {{-- Criteria Section --}}
         <div style="margin-top: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
@@ -160,9 +212,72 @@
 <script>
 function formBuilder() {
     return {
+        selectedProgram: '{{ old('extension_program_id', $selectedProgram) }}',
+        selectedProject: '{{ old('extension_project_id', $selectedProject) }}',
+        projects: @json($projects),
+        loadingProjects: false,
+        selectedTemplate: '',
+        loadingTemplate: false,
+        templateLoaded: false,
         criteria: [
             { label: '', type: 'rating', is_required: true }
         ],
+        init() {
+            // If a program is pre-selected and no projects loaded yet, load them
+            if (this.selectedProgram && this.projects.length === 0) {
+                this.loadProjects();
+            }
+        },
+        async loadProjects() {
+            this.selectedProject = '';
+            this.projects = [];
+            if (!this.selectedProgram) return;
+
+            this.loadingProjects = true;
+            try {
+                const response = await fetch(`/evaluation/projects-by-program/${this.selectedProgram}`);
+                this.projects = await response.json();
+            } catch (e) {
+                console.error('Failed to load projects', e);
+            } finally {
+                this.loadingProjects = false;
+            }
+        },
+        async loadTemplate() {
+            if (!this.selectedTemplate) return;
+
+            this.loadingTemplate = true;
+            this.templateLoaded = false;
+            try {
+                const response = await fetch(`/evaluation/forms/${this.selectedTemplate}/criteria`);
+                const data = await response.json();
+
+                // Populate title and description if still empty
+                const titleInput = document.querySelector('input[name="title"]');
+                const descInput = document.querySelector('input[name="description"]');
+                if (titleInput && !titleInput.value.trim()) {
+                    titleInput.value = data.title || '';
+                }
+                if (descInput && !descInput.value.trim()) {
+                    descInput.value = data.description || '';
+                }
+
+                // Load criteria
+                if (data.criteria && data.criteria.length > 0) {
+                    this.criteria = data.criteria.map(c => ({
+                        label: c.label,
+                        type: c.type,
+                        is_required: c.is_required
+                    }));
+                }
+
+                this.templateLoaded = true;
+            } catch (e) {
+                console.error('Failed to load template', e);
+            } finally {
+                this.loadingTemplate = false;
+            }
+        },
         addCriterion() {
             this.criteria.push({ label: '', type: 'rating', is_required: true });
         },

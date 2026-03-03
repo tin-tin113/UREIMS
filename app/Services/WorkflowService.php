@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ExtensionActivity;
 use App\Models\ExtensionProgram;
 use App\Models\ExtensionProject;
+use App\Models\StatusDocument;
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
@@ -106,13 +107,6 @@ class WorkflowService
         'completed' => ['Terminal/Completion Report'],
     ];
 
-    const PROGRAM_STRUCTURAL_RULES = [
-        'draft'    => 'No structural constraints.',
-        'proposal' => 'Program must have at least 1 project.',
-        'ongoing'  => 'All projects must be at least "ongoing".',
-        'completed'=> 'All projects must be "completed".',
-    ];
-
     /* ================================================================
      |  4.  PROJECT — REQUIRED FIELDS, DOCS & STRUCTURAL RULES
      | ================================================================ */
@@ -143,13 +137,6 @@ class WorkflowService
         'completed' => ['Completion Report'],
     ];
 
-    const PROJECT_STRUCTURAL_RULES = [
-        'draft'    => 'No structural constraints.',
-        'proposal' => 'Project must have at least 1 activity and at least 1 beneficiary.',
-        'ongoing'  => 'All activities must be at least "ongoing".',
-        'completed'=> 'All activities must be "completed".',
-    ];
-
     /* ================================================================
      |  5.  ACTIVITY — REQUIRED FIELDS, DOCS & STRUCTURAL RULES
      | ================================================================ */
@@ -178,23 +165,9 @@ class WorkflowService
         'completed' => [],
     ];
 
-    const ACTIVITY_STRUCTURAL_RULES = [
-        'draft'    => 'Activity must belong to a project.',
-        'proposal' => 'Activity must belong to a project.',
-        'ongoing'  => 'Activity must belong to a project.',
-        'completed'=> 'Activity must belong to a project.',
-    ];
-
     /* ================================================================
      |  6.  DOCUMENT TYPE HELPERS
      | ================================================================ */
-
-    const SUGGESTED_DOC_LABELS = [
-        'draft'     => ['Draft Document', 'Supporting Document', 'Reference Material', 'Other'],
-        'proposal'  => ['Proposal Document', 'Cover Letter', 'Proponent Profile / Bio', 'MOA / MOU', 'Endorsement Letter', 'Budget Breakdown', 'Work Plan / Timeline', 'Data Set', 'Other'],
-        'ongoing'   => ['Monitoring Report', 'Progress Report', 'Attendance Sheet', 'Photo Documentation', 'Financial Report', 'Other'],
-        'completed' => ['Terminal/Completion Report', 'Evaluation Report', 'Certificate', 'Photo Documentation', 'Financial Liquidation', 'Post-Activity Report', 'Other'],
-    ];
 
     /* ================================================================
      |  7.  PHASE NAVIGATION HELPERS
@@ -373,8 +346,8 @@ class WorkflowService
             }
         }
 
-        // --- Warnings (non-blocking) ---
-        $warnings = array_merge($warnings, self::checkWarnings($model, $type, $phase));
+        // --- Warnings (non-blocking, checked against target phase) ---
+        $warnings = array_merge($warnings, self::checkWarnings($model, $type, $nextPhase));
 
         return [
             'can_advance'  => empty($errors),
@@ -403,11 +376,6 @@ class WorkflowService
                 $projectCount = $model->projects()->count();
                 if ($projectCount === 0) {
                     $errors[] = 'Program must have at least 1 project before advancing.';
-                }
-
-                $memberCount = $model->members()->count();
-                if ($memberCount === 0) {
-                    $errors[] = 'Program must have at least 1 participant or member before advancing.';
                 }
             }
 
@@ -510,6 +478,22 @@ class WorkflowService
             }
         }
 
+        // Evaluation module warnings — nudge users to create evaluation forms
+        if ($type === 'project' && $phase === 'completed') {
+            $hasEvalForm = \App\Models\EvaluationForm::where('extension_project_id', $model->id)->exists();
+            if (! $hasEvalForm) {
+                $warnings[] = 'No evaluation form has been created for this project. Consider creating one to collect stakeholder feedback.';
+            }
+        }
+
+        if ($type === 'program' && $phase === 'completed') {
+            $projectIds = $model->projects()->pluck('extension_projects.id');
+            $hasAnyEvalForm = \App\Models\EvaluationForm::where('extension_program_id', $model->id)->exists();
+            if (! $hasAnyEvalForm) {
+                $warnings[] = 'No evaluation forms have been created for this program or its projects. Consider adding evaluation forms before completing.';
+            }
+        }
+
         return $warnings;
     }
 
@@ -600,6 +584,14 @@ class WorkflowService
                 if ($higherChildren > 0) {
                     $warnings[] = "{$higherChildren} child project(s) are at a higher status than the target phase.";
                 }
+
+                // Warn about evaluation data that could be orphaned by cascading
+                $evalResponseCount = \App\Models\EvaluationResponse::whereHas('activity', function ($q) use ($model) {
+                    $q->whereIn('extension_project_id', $model->projects()->pluck('extension_projects.id'));
+                })->count();
+                if ($evalResponseCount > 0) {
+                    $warnings[] = "{$evalResponseCount} evaluation response(s) exist under this program's activities. Cascading backward may create inconsistencies with evaluation data.";
+                }
             }
             if ($type === 'project') {
                 $higherChildren = $model->activities()
@@ -607,6 +599,15 @@ class WorkflowService
                     ->count();
                 if ($higherChildren > 0) {
                     $warnings[] = "{$higherChildren} child activity/ies are at a higher status than the target phase.";
+                }
+
+                // Warn about evaluation responses on child activities
+                $evalResponseCount = \App\Models\EvaluationResponse::whereIn(
+                    'extension_activity_id',
+                    $model->activities()->pluck('extension_activities.id')
+                )->count();
+                if ($evalResponseCount > 0) {
+                    $warnings[] = "{$evalResponseCount} evaluation response(s) exist on this project's activities. Cascading backward may create inconsistencies with evaluation data.";
                 }
             }
         }
@@ -730,6 +731,30 @@ class WorkflowService
     }
 
     /**
+     * Check whether a beneficiary can be deleted.
+     * Prevents deleting the last beneficiary of a submitted project.
+     */
+    public static function canDeleteBeneficiary($beneficiary): array
+    {
+        $errors = [];
+        $project = $beneficiary->project;
+
+        if ($project && in_array($project->status, ['proposal', 'ongoing', 'completed'])) {
+            $siblingCount = $project->beneficiaries()
+                ->where('id', '!=', $beneficiary->id)
+                ->count();
+            if ($siblingCount === 0) {
+                $errors[] = 'Cannot remove the only beneficiary of a submitted project.';
+            }
+        }
+
+        return [
+            'can_delete' => empty($errors),
+            'errors'     => $errors,
+        ];
+    }
+
+    /**
      * Validate that a new status assignment doesn't violate hierarchy.
      * Ensures only forward, single-step transitions without admin bypass.
      */
@@ -792,6 +817,7 @@ class WorkflowService
         }
 
         // Check if this is the sole satisfier of a required-doc constraint
+        // Uses dual matching: label OR document_type display name (rule D5)
         if ($action === 'delete') {
             $type  = self::resolveEntityType($model);
             $phase = $document->phase;
@@ -802,15 +828,37 @@ class WorkflowService
                 'activity' => self::ACTIVITY_REQUIRED_DOCS[$phase] ?? [],
             };
 
-            if (in_array($document->label, $requiredDocs)) {
+            // Check if this document satisfies any required doc (by label or type display name)
+            $docTypeName = StatusDocument::DOCUMENT_TYPES[$document->document_type] ?? null;
+            $satisfiesRequirement = null;
+            foreach ($requiredDocs as $reqLabel) {
+                if ($document->label === $reqLabel || $docTypeName === $reqLabel) {
+                    $satisfiesRequirement = $reqLabel;
+                    break;
+                }
+            }
+
+            if ($satisfiesRequirement) {
+                // Count other documents that also satisfy this requirement
                 $otherMatchCount = $model->statusDocuments()
                     ->where('phase', $phase)
-                    ->where('label', $document->label)
                     ->where('id', '!=', $document->id)
+                    ->where(function ($query) use ($satisfiesRequirement) {
+                        $query->where('label', $satisfiesRequirement)
+                              ->orWhere(function ($q) use ($satisfiesRequirement) {
+                                  // Match by document_type display name
+                                  $matchingKeys = array_keys(
+                                      array_filter(StatusDocument::DOCUMENT_TYPES, fn ($name) => $name === $satisfiesRequirement)
+                                  );
+                                  if (! empty($matchingKeys)) {
+                                      $q->whereIn('document_type', $matchingKeys);
+                                  }
+                              });
+                    })
                     ->count();
 
                 if ($otherMatchCount === 0) {
-                    $errors[] = "Cannot delete this document — it is the only one satisfying the required '{$document->label}' requirement for the {$phase} phase.";
+                    $errors[] = "Cannot delete this document — it is the only one satisfying the required '{$satisfiesRequirement}' requirement for the {$phase} phase.";
                 }
             }
         }

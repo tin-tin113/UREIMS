@@ -55,11 +55,12 @@
             </div>
         </div>
 
-        {{-- Program & Status Card --}}
+        {{-- Program, Project & Status Card --}}
         <div class="gf-card">
             <div style="margin-bottom: 20px;">
                 <p class="gf-label">Extension Program<span class="gf-required">*</span></p>
-                <select name="extension_program_id" required class="gf-select">
+                <select name="extension_program_id" required class="gf-select"
+                        x-model="selectedProgram" @change="loadProjects()">
                     <option value="">Select a program…</option>
                     @foreach($programs as $program)
                         <option value="{{ $program->id }}" {{ old('extension_program_id', $form->extension_program_id) == $program->id ? 'selected' : '' }}>
@@ -68,6 +69,21 @@
                     @endforeach
                 </select>
                 @error('extension_program_id')<p style="font-size: 12px; color: #d93025; margin-top: 4px;">{{ $message }}</p>@enderror
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p class="gf-label">Extension Project <span style="font-size: 12px; color: #70757a;">(optional)</span></p>
+                <select name="extension_project_id" class="gf-select"
+                        x-model="selectedProject" :disabled="!selectedProgram || loadingProjects">
+                    <option value="">All projects / Not specific to a project</option>
+                    <template x-for="project in projects" :key="project.id">
+                        <option :value="project.id" x-text="project.title"
+                                :selected="project.id == selectedProject"></option>
+                    </template>
+                </select>
+                <p x-show="loadingProjects" style="font-size: 12px; color: #70757a; margin-top: 4px;">Loading projects…</p>
+                <p x-show="!loadingProjects && selectedProgram && projects.length === 0" style="font-size: 12px; color: #70757a; margin-top: 4px;">No projects found for this program.</p>
+                @error('extension_project_id')<p style="font-size: 12px; color: #d93025; margin-top: 4px;">{{ $message }}</p>@enderror
             </div>
 
             <label style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #202124; cursor: pointer;">
@@ -191,7 +207,26 @@ function formEditor() {
     const existingCriteria = @json($criteriaJson);
 
     return {
+        selectedProgram: '{{ old('extension_program_id', $form->extension_program_id) }}',
+        selectedProject: '{{ old('extension_project_id', $form->extension_project_id) }}',
+        projects: @json($projects),
+        loadingProjects: false,
         criteria: existingCriteria.length ? existingCriteria : [{ id: null, label: '', type: 'rating', is_required: true, _key: nextKey++ }],
+        async loadProjects() {
+            this.selectedProject = '';
+            this.projects = [];
+            if (!this.selectedProgram) return;
+
+            this.loadingProjects = true;
+            try {
+                const response = await fetch(`/evaluation/projects-by-program/${this.selectedProgram}`);
+                this.projects = await response.json();
+            } catch (e) {
+                console.error('Failed to load projects', e);
+            } finally {
+                this.loadingProjects = false;
+            }
+        },
         addCriterion() {
             this.criteria.push({ id: null, label: '', type: 'rating', is_required: true, _key: nextKey++ });
         },

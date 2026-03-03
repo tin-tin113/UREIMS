@@ -12,6 +12,7 @@ class EvaluationForm extends Model
 
     protected $fillable = [
         'extension_program_id',
+        'extension_project_id',
         'title',
         'description',
         'is_active',
@@ -42,6 +43,11 @@ class EvaluationForm extends Model
     public function program()
     {
         return $this->belongsTo(ExtensionProgram::class, 'extension_program_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(ExtensionProject::class, 'extension_project_id');
     }
 
     public function creator()

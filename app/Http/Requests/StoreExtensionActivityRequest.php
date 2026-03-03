@@ -13,6 +13,11 @@ class StoreExtensionActivityRequest extends FormRequest
 
     public function rules(): array
     {
+        // Non-admin users can only choose draft status via form (controller enforces draft)
+        $allowedStatuses = auth()->user()?->isAdmin()
+            ? 'draft,proposal,ongoing,completed'
+            : 'draft,proposal';
+
         return [
             'extension_project_id' => ['required', 'exists:extension_projects,id'],
             'title'                => ['required', 'string', 'max:255'],
@@ -22,7 +27,7 @@ class StoreExtensionActivityRequest extends FormRequest
             'indicators_output'    => ['nullable', 'string'],
             'target_date'          => ['nullable', 'date'],
             'completion_date'      => ['nullable', 'date'],
-            'status'               => ['required', 'in:draft,proposal,ongoing,completed'],
+            'status'               => ['required', 'in:' . $allowedStatuses],
         ];
     }
 }

@@ -47,6 +47,15 @@ class ExtensionBeneficiary extends Model
         ];
     }
 
+    /* ---- Boot ---- */
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $beneficiary) {
+            $beneficiary->total_count = ($beneficiary->male_count ?? 0) + ($beneficiary->female_count ?? 0);
+        });
+    }
+
     /* ---- Relationships ---- */
 
     /** The primary owning project */

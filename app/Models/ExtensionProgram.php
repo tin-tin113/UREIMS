@@ -99,41 +99,4 @@ class ExtensionProgram extends Model
             && $this->target_end_date
             && $this->target_end_date->isPast();
     }
-
-    public function getProjectCountAttribute(): int
-    {
-        return $this->projects()->count();
-    }
-
-    /** Structural: does the program have at least one project? */
-    public function getHasProjectsAttribute(): bool
-    {
-        return $this->projects()->exists();
-    }
-
-    /** Structural: does the program have at least one member? (Req 2.1) */
-    public function getHasMembersAttribute(): bool
-    {
-        return $this->members()->exists();
-    }
-
-    /** Total beneficiary count across all child projects */
-    public function getTotalBeneficiaryCountAttribute(): int
-    {
-        return \App\Models\ExtensionBeneficiary::whereIn(
-            'extension_project_id',
-            $this->projects()->pluck('extension_projects.id')
-        )->count();
-    }
-
-    /** Are all child projects at or beyond a given phase? */
-    public function allProjectsAtLeast(string $phase): bool
-    {
-        $phaseOrder = ['draft' => 0, 'proposal' => 1, 'ongoing' => 2, 'completed' => 3];
-        $minIdx = $phaseOrder[$phase] ?? 0;
-
-        return $this->projects->every(
-            fn ($p) => ($phaseOrder[$p->status] ?? 0) >= $minIdx
-        );
-    }
 }

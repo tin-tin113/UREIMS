@@ -86,7 +86,7 @@ class ExtensionBeneficiaryController extends Controller
                 'sector'               => $row['sector'] ?? null,
                 'male_count'           => $male,
                 'female_count'         => $female,
-                'total_count'          => $male + $female,
+                // total_count is auto-computed by the model's boot saving event
             ]);
             $count++;
         }
@@ -142,7 +142,7 @@ class ExtensionBeneficiaryController extends Controller
             $data['male_count']   = $data['male_count'] ?? 0;
             $data['female_count'] = $data['female_count'] ?? 0;
         }
-        $data['total_count'] = $data['male_count'] + $data['female_count'];
+        // total_count is auto-computed by the model's boot saving event
 
         $beneficiary->update($data);
 
@@ -163,14 +163,12 @@ class ExtensionBeneficiaryController extends Controller
             abort(403, 'You do not have permission to delete this beneficiary.');
         }
 
-        // Structural guard: prevent deleting the last beneficiary of a submitted project
-        if (in_array($project->status, ['proposal', 'ongoing', 'completed'])) {
-            $siblingCount = $project->beneficiaries()->where('id', '!=', $beneficiary->id)->count();
-            if ($siblingCount === 0) {
-                return redirect()
-                    ->route('extension.beneficiaries.index', $project->id)
-                    ->with('error', 'Cannot remove the only beneficiary of a submitted project.');
-            }
+        // Structural guard: delegate to WorkflowService for centralized policy
+        $deleteCheck = \App\Services\WorkflowService::canDeleteBeneficiary($beneficiary);
+        if (! $deleteCheck['can_delete']) {
+            return redirect()
+                ->route('extension.beneficiaries.index', $project->id)
+                ->with('error', implode(' ', $deleteCheck['errors']));
         }
 
         $beneficiary->delete();

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Campus;
 use App\Models\ExtensionProgram;
 use App\Models\ExtensionProject;
-use App\Models\StatusDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -167,7 +166,7 @@ class ProposalWizardController extends Controller
         $this->validateType($type);
 
         $request->validate([
-            'file' => 'required|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,rtf,pptx',
+            'file' => 'required|file|max:10240|mimes:pdf,doc,docx',
         ]);
 
         $file = $request->file('file');
@@ -406,12 +405,15 @@ class ProposalWizardController extends Controller
         $dbId = $draft['_db_id'] ?? null;
 
         try {
-            // Wrap DB operations in a transaction (#15)
+            // Wrap ALL operations (DB writes, audit log, file moves) in a single
+            // transaction so that a failure at any point rolls back cleanly.
             $model = DB::transaction(function () use ($type, $draft, $details, $dbId) {
                 if ($type === 'program') {
                     $model = $this->createOrUpdateProgram($details, $dbId);
 
-                    // Create projects under this program
+                    // Create projects under this program at 'proposal' status
+                    // to match the parent's status and stay consistent with
+                    // the CRUD flow (ExtensionProgramController::store).
                     $draftProjects = $draft['projects'] ?? [];
                     foreach ($draftProjects as $proj) {
                         if (!empty($proj['title'])) {
@@ -434,25 +436,57 @@ class ProposalWizardController extends Controller
                     $model = $this->createOrUpdateProject($details, $dbId);
                 }
 
+                // Log the draft → proposal transition inside the transaction
+                // (business rule W7: every transition is logged atomically)
+                \App\Models\StatusTransitionLog::create([
+                    'transitionable_type' => get_class($model),
+                    'transitionable_id'   => $model->id,
+                    'from_status'         => 'draft',
+                    'to_status'           => 'proposal',
+                    'transitioned_by'     => auth()->id(),
+                    'is_bypass'           => false,
+                    'notes'               => 'Submitted via Proposal Wizard.',
+                ]);
+
+                // Move files and attach document records inside the transaction
+                // so any failure rolls back both the DB records and we can
+                // track which files were moved for cleanup.
+                $movedFiles = [];
+                try {
+                    foreach ($draft['uploaded_files'] ?? [] as $fileInfo) {
+                        $newPath = str_replace('proposal-drafts/', 'status-documents/', $fileInfo['path']);
+                        Storage::disk('public')->move($fileInfo['path'], $newPath);
+                        $movedFiles[] = ['from' => $fileInfo['path'], 'to' => $newPath];
+
+                        // Resolve document_type key from the label (match against known types)
+                        $docTypeKey = array_search($fileInfo['label'], \App\Models\StatusDocument::DOCUMENT_TYPES);
+
+                        $model->statusDocuments()->create([
+                            'phase'         => 'proposal',
+                            'label'         => $fileInfo['label'],
+                            'document_type' => $docTypeKey ?: 'supporting',
+                            'file_name'     => basename($newPath),
+                            'file_path'     => $newPath,
+                            'original_name' => $fileInfo['original_name'],
+                            'mime_type'     => $fileInfo['mime_type'],
+                            'file_size'     => $fileInfo['size'],
+                            'uploaded_by'   => auth()->id(),
+                        ]);
+                    }
+                } catch (\Exception $fileEx) {
+                    // Rollback moved files before the DB transaction rolls back
+                    foreach ($movedFiles as $moved) {
+                        try {
+                            Storage::disk('public')->move($moved['to'], $moved['from']);
+                        } catch (\Exception $ignored) {
+                            // Best-effort rollback
+                        }
+                    }
+                    throw $fileEx;
+                }
+
                 return $model;
             });
-
-            // Move files and attach documents after successful DB transaction
-            foreach ($draft['uploaded_files'] ?? [] as $fileInfo) {
-                $newPath = str_replace('proposal-drafts/', 'status-documents/', $fileInfo['path']);
-                Storage::disk('public')->move($fileInfo['path'], $newPath);
-
-                $model->statusDocuments()->create([
-                    'phase'         => 'proposal',
-                    'label'         => $fileInfo['label'],
-                    'file_name'     => basename($newPath),
-                    'file_path'     => $newPath,
-                    'original_name' => $fileInfo['original_name'],
-                    'mime_type'     => $fileInfo['mime_type'],
-                    'file_size'     => $fileInfo['size'],
-                    'uploaded_by'   => auth()->id(),
-                ]);
-            }
         } catch (\Exception $e) {
             return back()->with('error', 'An error occurred while submitting. Please try again.');
         }

@@ -6,8 +6,9 @@ use App\Http\Requests\StoreExtensionProgramRequest;
 use App\Http\Requests\UpdateExtensionProgramRequest;
 use App\Models\Campus;
 use App\Models\ExtensionProgram;
-use App\Models\ExtensionProgramMember;
 use App\Models\ExtensionProject;
+use App\Models\StatusTransitionLog;
+use App\Services\WorkflowService;
 
 class ExtensionProgramController extends Controller
 {
@@ -78,14 +79,11 @@ class ExtensionProgramController extends Controller
         $projects = $data['projects'] ?? [];
         unset($data['members'], $data['projects']);
 
-        // Structural integrity: non-draft programs require projects and members (Req 2.1, 2.3, 2.4)
+        // Structural integrity: non-draft programs require at least one project
         $effectiveStatus = $data['status'] ?? 'proposal';
         if ($effectiveStatus !== 'draft') {
             if (collect($projects)->filter(fn ($p) => ! empty($p['title']))->isEmpty()) {
                 return back()->withErrors(['projects' => 'A Program must contain at least one Project.'])->withInput();
-            }
-            if (collect($members)->filter(fn ($m) => ! empty($m['name']))->isEmpty()) {
-                return back()->withErrors(['members' => 'A Program must have at least one participant or member.'])->withInput();
             }
         }
 
@@ -116,6 +114,17 @@ class ExtensionProgramController extends Controller
             }
         }
 
+        // Log the initial creation for audit trail (business rule W7)
+        StatusTransitionLog::create([
+            'transitionable_type' => get_class($program),
+            'transitionable_id'   => $program->id,
+            'from_status'         => 'created',
+            'to_status'           => $program->status,
+            'transitioned_by'     => auth()->id(),
+            'is_bypass'           => false,
+            'notes'               => 'Initial creation via program form.',
+        ]);
+
         return redirect()
             ->route('extension.programs.show', $program)
             ->with('success', 'Extension program created successfully.');
@@ -125,7 +134,7 @@ class ExtensionProgramController extends Controller
     {
         $program->load(['campus', 'creator', 'members', 'projects.activities', 'projects.campus', 'statusDocuments.uploader', 'transitionLogs.transitioner']);
 
-        $workflowCheck = \App\Services\WorkflowService::canAdvance($program);
+        $workflowCheck = WorkflowService::canAdvance($program);
 
         return view('extension.programs.show', compact('program', 'workflowCheck'));
     }
@@ -150,10 +159,8 @@ class ExtensionProgramController extends Controller
 
         $data = $request->validated();
 
-        // Non-admin users cannot change status directly
-        if (! auth()->user()->isAdmin()) {
-            unset($data['status']);
-        }
+        // Status changes must go through workflow advance/bypass — never via edit form
+        unset($data['status']);
 
         $data['funding_total'] = ($data['funding_chmsu_gaa'] ?? 0)
                                + ($data['funding_chmsu_stf'] ?? 0)
@@ -163,14 +170,11 @@ class ExtensionProgramController extends Controller
         $projects = $data['projects'] ?? [];
         unset($data['members'], $data['projects']);
 
-        // Structural integrity: non-draft programs require projects and members (Req 2.1, 2.3, 2.4)
-        $effectiveStatus = $data['status'] ?? $program->status;
+        // Structural integrity: non-draft programs require at least one project
+        $effectiveStatus = $program->status;
         if ($effectiveStatus !== 'draft') {
             if (collect($projects)->filter(fn ($p) => ! empty($p['title']))->isEmpty()) {
                 return back()->withErrors(['projects' => 'A Program must contain at least one Project.'])->withInput();
-            }
-            if (collect($members)->filter(fn ($m) => ! empty($m['name']))->isEmpty()) {
-                return back()->withErrors(['members' => 'A Program must have at least one participant or member.'])->withInput();
             }
         }
 
@@ -187,8 +191,17 @@ class ExtensionProgramController extends Controller
         // Sync inline projects
         $submittedIds = collect($projects)->pluck('id')->filter()->toArray();
 
-        // Delete projects that were removed from the form
-        $program->projects()->whereNotIn('id', $submittedIds)->delete();
+        // Delete projects that were removed from the form (with workflow guard)
+        $projectsToRemove = $program->projects()->whereNotIn('id', $submittedIds)->get();
+        foreach ($projectsToRemove as $projectToRemove) {
+            $deleteCheck = WorkflowService::canDelete($projectToRemove);
+            if (! $deleteCheck['can_delete']) {
+                return back()->withErrors(['projects' => 'Cannot remove project "' . $projectToRemove->title . '": ' . implode(' ', $deleteCheck['errors'])])->withInput();
+            }
+        }
+        foreach ($projectsToRemove as $projectToRemove) {
+            $projectToRemove->delete();
+        }
 
         // Create or update projects
         foreach ($projects as $proj) {
@@ -231,7 +244,7 @@ class ExtensionProgramController extends Controller
             abort(403, 'You do not have permission to delete this program.');
         }
 
-        $deleteCheck = \App\Services\WorkflowService::canDelete($program);
+        $deleteCheck = WorkflowService::canDelete($program);
         if (! $deleteCheck['can_delete']) {
             return redirect()
                 ->route('extension.programs.show', $program)

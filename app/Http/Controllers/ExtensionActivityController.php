@@ -6,6 +6,8 @@ use App\Http\Requests\StoreExtensionActivityRequest;
 use App\Http\Requests\UpdateExtensionActivityRequest;
 use App\Models\ExtensionActivity;
 use App\Models\ExtensionProject;
+use App\Models\StatusTransitionLog;
+use App\Services\WorkflowService;
 
 class ExtensionActivityController extends Controller
 {
@@ -40,6 +42,7 @@ class ExtensionActivityController extends Controller
         // Counts for tabs
         $totalActivities = ExtensionActivity::count();
         $statusCounts = [
+            'draft'     => ExtensionActivity::where('status', 'draft')->count(),
             'proposal'  => ExtensionActivity::where('status', 'proposal')->count(),
             'ongoing'   => ExtensionActivity::where('status', 'ongoing')->count(),
             'completed' => ExtensionActivity::where('status', 'completed')->count(),
@@ -72,7 +75,23 @@ class ExtensionActivityController extends Controller
 
         $data['created_by'] = auth()->id();
 
+        // Non-admin users can only create draft activities (workflow enforcement)
+        if (! auth()->user()->isAdmin()) {
+            $data['status'] = 'draft';
+        }
+
         $activity = ExtensionActivity::create($data);
+
+        // Log the initial creation for audit trail (business rule W7)
+        StatusTransitionLog::create([
+            'transitionable_type' => get_class($activity),
+            'transitionable_id'   => $activity->id,
+            'from_status'         => 'created',
+            'to_status'           => $activity->status,
+            'transitioned_by'     => auth()->id(),
+            'is_bypass'           => false,
+            'notes'               => 'Initial creation via activity form.',
+        ]);
 
         return redirect()
             ->route('extension.projects.show', $activity->extension_project_id)
@@ -96,7 +115,12 @@ class ExtensionActivityController extends Controller
             abort(403, 'You do not have permission to update this activity.');
         }
 
-        $activity->update($request->validated());
+        $data = $request->validated();
+
+        // Status changes must go through workflow advance/bypass — never via edit form
+        unset($data['status']);
+
+        $activity->update($data);
 
         return redirect()
             ->route('extension.projects.show', $activity->extension_project_id)
@@ -110,7 +134,7 @@ class ExtensionActivityController extends Controller
         }
 
         // Structural integrity: prevent deleting the last activity of a submitted project
-        $deleteCheck = \App\Services\WorkflowService::canDelete($activity);
+        $deleteCheck = WorkflowService::canDelete($activity);
         if (! $deleteCheck['can_delete']) {
             return redirect()
                 ->route('extension.projects.show', $activity->extension_project_id)

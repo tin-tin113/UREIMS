@@ -79,11 +79,6 @@ class ExtensionProject extends Model
 
     /* ---- Accessors ---- */
 
-    public function getIsStandaloneAttribute(): bool
-    {
-        return is_null($this->extension_program_id);
-    }
-
     public function getIsOverdueAttribute(): bool
     {
         return $this->status !== 'completed'
@@ -91,16 +86,7 @@ class ExtensionProject extends Model
             && $this->target_end_date->isPast();
     }
 
-    public function getActivityCountAttribute(): int
-    {
-        return $this->activities()->count();
-    }
-
-    public function getBeneficiaryCountAttribute(): int
-    {
-        return $this->beneficiaries()->count();
-    }
-
+    /** Total budget from all budget line items for this project */
     public function getTotalBudgetSpentAttribute(): float
     {
         return (float) $this->budgetItems()->sum('total_budget');

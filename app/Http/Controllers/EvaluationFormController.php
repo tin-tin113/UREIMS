@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EvaluationForm;
 use App\Models\EvaluationCriteria;
 use App\Models\ExtensionProgram;
+use App\Models\ExtensionProject;
 use Illuminate\Http\Request;
 
 class EvaluationFormController extends Controller
@@ -14,7 +15,7 @@ class EvaluationFormController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EvaluationForm::with(['program', 'creator'])
+        $query = EvaluationForm::with(['program', 'project', 'creator'])
             ->withCount(['criteria', 'responses']);
 
         if (! auth()->user()->isAdmin()) {
@@ -46,7 +47,25 @@ class EvaluationFormController extends Controller
 
         $selectedProgram = $request->program_id;
 
-        return view('evaluation.forms.create', compact('programs', 'selectedProgram'));
+        // Load projects for the selected program (or all programs for JS dynamic loading)
+        $projects = collect();
+        if ($selectedProgram) {
+            $projects = ExtensionProject::where('extension_program_id', $selectedProgram)
+                ->orderBy('title')
+                ->get(['id', 'extension_program_id', 'title']);
+        }
+
+        $selectedProject = $request->project_id;
+
+        // Available forms for "use as template" feature
+        $templateForms = auth()->user()->isAdmin()
+            ? EvaluationForm::withCount('criteria')->orderBy('title')->get(['id', 'title', 'extension_program_id'])
+            : EvaluationForm::whereIn('extension_program_id', $programs->pluck('id'))
+                ->withCount('criteria')
+                ->orderBy('title')
+                ->get(['id', 'title', 'extension_program_id']);
+
+        return view('evaluation.forms.create', compact('programs', 'selectedProgram', 'projects', 'selectedProject', 'templateForms'));
     }
 
     /**
@@ -55,7 +74,8 @@ class EvaluationFormController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'extension_program_id' => ['required', 'exists:extension_programs,id'],
+            'extension_program_id'  => ['required', 'exists:extension_programs,id'],
+            'extension_project_id'  => ['nullable', 'exists:extension_projects,id'],
             'title'                => ['required', 'string', 'max:255'],
             'description'          => ['nullable', 'string', 'max:2000'],
             'criteria'             => ['required', 'array', 'min:1'],
@@ -72,8 +92,30 @@ class EvaluationFormController extends Controller
             }
         }
 
+        // Phase gate: evaluation forms should only be created for programs
+        // that are at least 'ongoing' (implementation phase)
+        $program = $program ?? ExtensionProgram::findOrFail($data['extension_program_id']);
+        if (! in_array($program->status, ['ongoing', 'completed'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'Evaluation forms can only be created for programs that are Ongoing or Completed.');
+        }
+
+        // Validate project belongs to the specified program (if provided)
+        if (! empty($data['extension_project_id'])) {
+            $projectBelongs = ExtensionProject::where('id', $data['extension_project_id'])
+                ->where('extension_program_id', $data['extension_program_id'])
+                ->exists();
+            if (! $projectBelongs) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'The selected project does not belong to the specified program.');
+            }
+        }
+
         $form = EvaluationForm::create([
             'extension_program_id' => $data['extension_program_id'],
+            'extension_project_id' => $data['extension_project_id'] ?? null,
             'title'                => $data['title'],
             'description'          => $data['description'] ?? null,
             'created_by'           => auth()->id(),
@@ -101,6 +143,7 @@ class EvaluationFormController extends Controller
     {
         $form->load([
             'program',
+            'project',
             'creator',
             'criteria',
             'responses.activity',
@@ -158,7 +201,11 @@ class EvaluationFormController extends Controller
             ? ExtensionProgram::orderBy('title')->get(['id', 'title'])
             : ExtensionProgram::where('created_by', auth()->id())->orderBy('title')->get(['id', 'title']);
 
-        return view('evaluation.forms.edit', compact('form', 'programs'));
+        $projects = ExtensionProject::where('extension_program_id', $form->extension_program_id)
+            ->orderBy('title')
+            ->get(['id', 'extension_program_id', 'title']);
+
+        return view('evaluation.forms.edit', compact('form', 'programs', 'projects'));
     }
 
     /**
@@ -171,7 +218,8 @@ class EvaluationFormController extends Controller
         }
 
         $data = $request->validate([
-            'extension_program_id' => ['required', 'exists:extension_programs,id'],
+            'extension_program_id'  => ['required', 'exists:extension_programs,id'],
+            'extension_project_id'  => ['nullable', 'exists:extension_projects,id'],
             'title'                => ['required', 'string', 'max:255'],
             'description'          => ['nullable', 'string', 'max:2000'],
             'is_active'            => ['sometimes', 'boolean'],
@@ -182,8 +230,21 @@ class EvaluationFormController extends Controller
             'criteria.*.is_required' => ['sometimes', 'boolean'],
         ]);
 
+        // Validate project belongs to the specified program (if provided)
+        if (! empty($data['extension_project_id'])) {
+            $projectBelongs = ExtensionProject::where('id', $data['extension_project_id'])
+                ->where('extension_program_id', $data['extension_program_id'])
+                ->exists();
+            if (! $projectBelongs) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'The selected project does not belong to the specified program.');
+            }
+        }
+
         $form->update([
             'extension_program_id' => $data['extension_program_id'],
+            'extension_project_id' => $data['extension_project_id'] ?? null,
             'title'                => $data['title'],
             'description'          => $data['description'] ?? null,
             'is_active'            => $data['is_active'] ?? $form->is_active,
@@ -255,6 +316,72 @@ class EvaluationFormController extends Controller
 
         $status = $form->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "Evaluation form {$status}.");
+    }
+
+    /**
+     * Duplicate an existing evaluation form (clone with all criteria).
+     */
+    public function duplicate(EvaluationForm $form)
+    {
+        $form->load('criteria');
+
+        // Permission check for non-admin
+        if (! auth()->user()->isAdmin()) {
+            $programIds = ExtensionProgram::where('created_by', auth()->id())->pluck('id');
+            if (! $programIds->contains($form->extension_program_id)) {
+                abort(403, 'You can only duplicate forms from your own programs.');
+            }
+        }
+
+        $newForm = EvaluationForm::create([
+            'extension_program_id' => $form->extension_program_id,
+            'extension_project_id' => $form->extension_project_id,
+            'title'                => $form->title . ' (Copy)',
+            'description'          => $form->description,
+            'created_by'           => auth()->id(),
+        ]);
+
+        foreach ($form->criteria as $criterion) {
+            EvaluationCriteria::create([
+                'evaluation_form_id' => $newForm->id,
+                'label'              => $criterion->label,
+                'type'               => $criterion->type,
+                'sort_order'         => $criterion->sort_order,
+                'is_required'        => $criterion->is_required,
+            ]);
+        }
+
+        return redirect()
+            ->route('evaluation.forms.edit', $newForm)
+            ->with('success', 'Form duplicated successfully. You can now edit the copy.');
+    }
+
+    /**
+     * AJAX: Return criteria for a given form (for template loading).
+     */
+    public function formCriteria(EvaluationForm $form)
+    {
+        $criteria = $form->criteria()
+            ->orderBy('sort_order')
+            ->get(['id', 'label', 'type', 'is_required']);
+
+        return response()->json([
+            'title'       => $form->title,
+            'description' => $form->description,
+            'criteria'    => $criteria,
+        ]);
+    }
+
+    /**
+     * AJAX: Return projects for a given program (for dynamic dropdown).
+     */
+    public function projectsByProgram(ExtensionProgram $program)
+    {
+        $projects = $program->projects()
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return response()->json($projects);
     }
 
     /**

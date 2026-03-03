@@ -14,48 +14,58 @@ class DashboardController extends Controller
     public function index()
     {
         $today = now()->startOfDay();
+        $user  = auth()->user();
+        $isAdmin = $user->isAdmin();
+
+        // Scope queries: admins see everything, staff see only their own records
+        $programQuery    = $isAdmin ? ExtensionProgram::query() : ExtensionProgram::where('created_by', $user->id);
+        $projectQuery    = $isAdmin ? ExtensionProject::query()  : ExtensionProject::where('created_by', $user->id);
+        $activityQuery   = $isAdmin ? ExtensionActivity::query() : ExtensionActivity::where('created_by', $user->id);
+        $beneficiaryQuery = $isAdmin
+            ? ExtensionBeneficiary::query()
+            : ExtensionBeneficiary::whereIn('extension_project_id', ExtensionProject::where('created_by', $user->id)->pluck('id'));
 
         // Summary counts
-        $totalPrograms    = ExtensionProgram::count();
-        $totalProjects    = ExtensionProject::count();
-        $totalActivities  = ExtensionActivity::count();
-        $totalBeneficiaries = ExtensionBeneficiary::count();
+        $totalPrograms    = (clone $programQuery)->count();
+        $totalProjects    = (clone $projectQuery)->count();
+        $totalActivities  = (clone $activityQuery)->count();
+        $totalBeneficiaries = (clone $beneficiaryQuery)->count();
 
         // Beneficiary impact totals
-        $beneficiaryMaleTotal   = ExtensionBeneficiary::sum('male_count');
-        $beneficiaryFemaleTotal = ExtensionBeneficiary::sum('female_count');
-        $beneficiaryHeadTotal   = ExtensionBeneficiary::sum('total_count');
+        $beneficiaryMaleTotal   = (clone $beneficiaryQuery)->sum('male_count');
+        $beneficiaryFemaleTotal = (clone $beneficiaryQuery)->sum('female_count');
+        $beneficiaryHeadTotal   = (clone $beneficiaryQuery)->sum('total_count');
 
-        // User and campus counts (for admin)
-        $totalUsers    = User::count();
-        $totalCampuses = Campus::count();
+        // User and campus counts (visible only to admin, zero for staff)
+        $totalUsers    = $isAdmin ? User::count() : 0;
+        $totalCampuses = $isAdmin ? Campus::count() : 0;
 
         // Status breakdown — Programs
         $programsByStatus = [
-            'draft'     => ExtensionProgram::where('status', 'draft')->count(),
-            'proposal'  => ExtensionProgram::where('status', 'proposal')->count(),
-            'ongoing'   => ExtensionProgram::where('status', 'ongoing')->count(),
-            'completed' => ExtensionProgram::where('status', 'completed')->count(),
+            'draft'     => (clone $programQuery)->where('status', 'draft')->count(),
+            'proposal'  => (clone $programQuery)->where('status', 'proposal')->count(),
+            'ongoing'   => (clone $programQuery)->where('status', 'ongoing')->count(),
+            'completed' => (clone $programQuery)->where('status', 'completed')->count(),
         ];
 
         // Status breakdown — Projects
         $projectsByStatus = [
-            'draft'     => ExtensionProject::where('status', 'draft')->count(),
-            'proposal'  => ExtensionProject::where('status', 'proposal')->count(),
-            'ongoing'   => ExtensionProject::where('status', 'ongoing')->count(),
-            'completed' => ExtensionProject::where('status', 'completed')->count(),
+            'draft'     => (clone $projectQuery)->where('status', 'draft')->count(),
+            'proposal'  => (clone $projectQuery)->where('status', 'proposal')->count(),
+            'ongoing'   => (clone $projectQuery)->where('status', 'ongoing')->count(),
+            'completed' => (clone $projectQuery)->where('status', 'completed')->count(),
         ];
 
         // Status breakdown — Activities
         $activitiesByStatus = [
-            'draft'     => ExtensionActivity::where('status', 'draft')->count(),
-            'proposal'  => ExtensionActivity::where('status', 'proposal')->count(),
-            'ongoing'   => ExtensionActivity::where('status', 'ongoing')->count(),
-            'completed' => ExtensionActivity::where('status', 'completed')->count(),
+            'draft'     => (clone $activityQuery)->where('status', 'draft')->count(),
+            'proposal'  => (clone $activityQuery)->where('status', 'proposal')->count(),
+            'ongoing'   => (clone $activityQuery)->where('status', 'ongoing')->count(),
+            'completed' => (clone $activityQuery)->where('status', 'completed')->count(),
         ];
 
         // Overdue items
-        $overdueActivities = ExtensionActivity::where('status', '!=', 'completed')
+        $overdueActivities = (clone $activityQuery)->where('status', '!=', 'completed')
             ->whereNotNull('target_date')
             ->where('target_date', '<', $today)
             ->with('project')
@@ -63,7 +73,7 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
-        $overdueProjects = ExtensionProject::where('status', '!=', 'completed')
+        $overdueProjects = (clone $projectQuery)->where('status', '!=', 'completed')
             ->whereNotNull('target_end_date')
             ->where('target_end_date', '<', $today)
             ->latest('target_end_date')
@@ -71,12 +81,12 @@ class DashboardController extends Controller
             ->get();
 
         // Recent items
-        $recentPrograms = ExtensionProgram::with('campus')
+        $recentPrograms = (clone $programQuery)->with('campus')
             ->latest()
             ->take(5)
             ->get();
 
-        $recentProjects = ExtensionProject::with(['campus', 'program'])
+        $recentProjects = (clone $projectQuery)->with(['campus', 'program'])
             ->latest()
             ->take(5)
             ->get();

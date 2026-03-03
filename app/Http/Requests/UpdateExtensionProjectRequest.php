@@ -13,6 +13,7 @@ class UpdateExtensionProjectRequest extends FormRequest
 
     public function rules(): array
     {
+        // Status changes go through workflow advance/bypass, not edit form
         return [
             'extension_program_id' => ['nullable', 'exists:extension_programs,id'],
             'title'                => ['required', 'string', 'max:255'],
@@ -23,7 +24,7 @@ class UpdateExtensionProjectRequest extends FormRequest
             'indicators_output'    => ['nullable', 'string'],
             'target_start_date'    => ['nullable', 'date'],
             'target_end_date'      => ['nullable', 'date', 'after_or_equal:target_start_date'],
-            'status'               => ['required', 'in:draft,proposal,ongoing,completed'],
+            'status'               => ['nullable', 'in:draft,proposal,ongoing,completed'],
             'campus_id'            => ['required', 'exists:campuses,id'],
         ];
     }

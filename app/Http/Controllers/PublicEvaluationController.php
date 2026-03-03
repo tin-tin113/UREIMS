@@ -53,6 +53,18 @@ class PublicEvaluationController extends Controller
             'answers.*'                => ['nullable'],
         ]);
 
+        // Server-side guard: only accept evaluations for ongoing/completed activities
+        $activity = \App\Models\ExtensionActivity::findOrFail($data['extension_activity_id']);
+        if (! in_array($activity->status, ['ongoing', 'completed'])) {
+            return back()->with('error', 'This activity is not yet open for evaluation.');
+        }
+
+        // Verify the activity belongs to a project under this form's program
+        $programProjectIds = $form->program->projects()->pluck('id')->toArray();
+        if (! in_array($activity->extension_project_id, $programProjectIds)) {
+            return back()->with('error', 'This activity does not belong to the evaluated program.');
+        }
+
         // Create the response record
         $response = EvaluationResponse::create([
             'evaluation_form_id'       => $form->id,

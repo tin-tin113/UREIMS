@@ -65,7 +65,7 @@ class EvaluationEncodeController extends Controller
             'answers.*'                => ['nullable'],
         ]);
 
-        $form = EvaluationForm::with('criteria')->findOrFail($data['evaluation_form_id']);
+        $form = EvaluationForm::with(['criteria', 'program.projects'])->findOrFail($data['evaluation_form_id']);
 
         // Permission check
         if (! auth()->user()->isAdmin()) {
@@ -73,6 +73,18 @@ class EvaluationEncodeController extends Controller
             if ($program->created_by !== auth()->id()) {
                 abort(403, 'You can only encode responses for your own programs.');
             }
+        }
+
+        // Validate the activity belongs to a project under this form's program
+        $activity = \App\Models\ExtensionActivity::findOrFail($data['extension_activity_id']);
+        $programProjectIds = $form->program->projects->pluck('id')->toArray();
+        if (! in_array($activity->extension_project_id, $programProjectIds)) {
+            return back()->withInput()->with('error', 'This activity does not belong to the evaluated program.');
+        }
+
+        // Only accept evaluations for ongoing/completed activities
+        if (! in_array($activity->status, ['ongoing', 'completed'])) {
+            return back()->withInput()->with('error', 'This activity is not yet open for evaluation.');
         }
 
         $response = EvaluationResponse::create([

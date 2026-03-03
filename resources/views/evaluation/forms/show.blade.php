@@ -32,6 +32,14 @@
             <div style="min-width: 0;">
                 <h1 style="font-size: 24px; font-weight: 400; color: #202124; margin: 0 0 4px;" class="sm:!text-[32px]">{{ $form->title }}</h1>
                 <p style="font-size: 14px; color: #70757a; margin: 0;">{{ $form->program->title ?? '—' }}</p>
+                @if($form->project)
+                    <p style="font-size: 13px; color: #5f6368; margin: 4px 0 0;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            Project: {{ $form->project->title }}
+                        </span>
+                    </p>
+                @endif
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                 <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;
@@ -118,6 +126,13 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             Encode Hardcopy
         </a>
+        <form method="POST" action="{{ route('evaluation.forms.duplicate', $form) }}" style="display: inline;">
+            @csrf
+            <button type="submit" class="gf-btn-outline" style="cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                Duplicate Form
+            </button>
+        </form>
     </div>
 
     {{-- Criteria List Card --}}

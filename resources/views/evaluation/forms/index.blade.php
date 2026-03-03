@@ -55,6 +55,7 @@
                         <th style="text-align: left; padding: 12px 24px; font-weight: 500; color: #5f6368; font-size: 12px; width: 40px;">#</th>
                         <th style="text-align: left; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Title</th>
                         <th style="text-align: left; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Program</th>
+                        <th style="text-align: left; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Project</th>
                         <th style="text-align: center; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Criteria</th>
                         <th style="text-align: center; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Responses</th>
                         <th style="text-align: center; padding: 12px 16px; font-weight: 500; color: #5f6368; font-size: 12px;">Status</th>
@@ -74,6 +75,7 @@
                                 </a>
                             </td>
                             <td style="padding: 14px 16px; color: #5f6368; font-size: 13px;">{{ Str::limit($form->program->title ?? '—', 40) }}</td>
+                            <td style="padding: 14px 16px; color: #5f6368; font-size: 13px;">{{ Str::limit($form->project->title ?? '—', 30) }}</td>
                             <td style="padding: 14px 16px; text-align: center; color: #5f6368;">{{ $form->criteria_count }}</td>
                             <td style="padding: 14px 16px; text-align: center;">
                                 @if($form->responses_count > 0)
@@ -110,6 +112,15 @@
                                        title="Edit">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
+                                    <form method="POST" action="{{ route('evaluation.forms.duplicate', $form) }}" style="display: inline;">
+                                        @csrf
+                                        <button type="submit"
+                                                style="padding: 6px; color: #5f6368; border: none; background: transparent; border-radius: 50%; display: inline-flex; cursor: pointer; transition: background 0.2s;"
+                                                onmouseover="this.style.background='#e8f5e9'; this.style.color='#2e7d32'" onmouseout="this.style.background='transparent'; this.style.color='#5f6368'"
+                                                title="Duplicate">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{{ route('evaluation.forms.destroy', $form) }}" style="display: inline;"
                                           onsubmit="return confirmSubmit(event, 'Delete Form', 'This will permanently delete this evaluation form and all its responses. Continue?', 'danger', 'Delete')">
                                         @csrf @method('DELETE')
